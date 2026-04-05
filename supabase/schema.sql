@@ -100,3 +100,9 @@ create trigger set_orders_updated_at
 before update on orders
 for each row
 execute function update_updated_at_column();
+
+-- Apple accounts RLS policy.
+-- Run this in the Supabase SQL Editor when apple_accounts exists:
+alter table if exists apple_accounts enable row level security;
+drop policy if exists "allow all" on apple_accounts;
+create policy "allow all" on apple_accounts for all using (true);
