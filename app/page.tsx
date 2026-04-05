@@ -18,7 +18,7 @@ import { formatCurrency, formatPercent, toDateInputValue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-function formatMonthBoundary(date: Date) {
+function formatBoundary(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
@@ -26,8 +26,11 @@ export default async function DashboardPage() {
   const orders = await getOrders();
   const today = toDateInputValue();
   const now = new Date(`${today}T00:00:00`);
-  const monthStart = formatMonthBoundary(new Date(now.getFullYear(), now.getMonth(), 1));
-  const monthEnd = formatMonthBoundary(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  const currentYear = now.getFullYear();
+  const monthStart = formatBoundary(new Date(currentYear, now.getMonth(), 1));
+  const monthEnd = formatBoundary(new Date(currentYear, now.getMonth() + 1, 0));
+  const yearStart = formatBoundary(new Date(currentYear, 0, 1));
+  const yearEnd = formatBoundary(new Date(currentYear, 11, 31));
 
   const monthlySoldOrders = orders.filter(
     (order) =>
@@ -41,15 +44,33 @@ export default async function DashboardPage() {
     (order) => !!order.order_date && order.order_date >= monthStart && order.order_date <= monthEnd,
   );
 
+  const yearlySoldOrders = orders.filter(
+    (order) =>
+      order.status === "売却済み" &&
+      !!order.order_date &&
+      order.order_date >= yearStart &&
+      order.order_date <= yearEnd,
+  );
+
+  const yearlyOrders = orders.filter(
+    (order) => !!order.order_date && order.order_date >= yearStart && order.order_date <= yearEnd,
+  );
+
   const monthlySales = monthlySoldOrders.reduce((sum, order) => sum + order.sale_price, 0);
   const monthlyProfit = monthlySoldOrders.reduce((sum, order) => sum + calcNetProfit(order), 0);
+  const monthlyPoints = monthlyOrders.reduce((sum, order) => sum + order.earned_points, 0);
+  const monthlyProfitRate = calcProfitRate(monthlyProfit, monthlySales);
+
+  const yearlySales = yearlySoldOrders.reduce((sum, order) => sum + order.sale_price, 0);
+  const yearlyProfit = yearlySoldOrders.reduce((sum, order) => sum + calcNetProfit(order), 0);
+  const yearlyPoints = yearlyOrders.reduce((sum, order) => sum + order.earned_points, 0);
+  const yearlyProfitRate = calcProfitRate(yearlyProfit, yearlySales);
+
   const inventoryOrders = orders.filter((order) => !["売却済み", "キャンセル"].includes(order.status));
   const inventoryValue = inventoryOrders.reduce((sum, order) => sum + order.purchase_price, 0);
-  const monthlyPoints = monthlyOrders.reduce((sum, order) => sum + order.earned_points, 0);
   const todayDeliveries = orders.filter((order) => order.delivery_date === today);
   const exiledOrders = orders.filter((order) => order.status === "島流し");
   const exiledValue = exiledOrders.reduce((sum, order) => sum + order.purchase_price, 0);
-  const monthlyProfitRate = calcProfitRate(monthlyProfit, monthlySales);
 
   const arrivals = [...orders]
     .filter((order) => !!order.delivery_date && order.delivery_date >= today)
@@ -57,19 +78,15 @@ export default async function DashboardPage() {
 
   const storePickups = [...orders]
     .filter(
-      (order) =>
-        order.status === "発注済み" && STORE_SUPPLIER_NAMES.includes(order.suppliers?.name ?? ""),
+      (order) => order.status === "発注済み" && STORE_SUPPLIER_NAMES.includes(order.suppliers?.name ?? ""),
     )
     .sort((left, right) => (left.delivery_date ?? "").localeCompare(right.delivery_date ?? ""));
 
   const transfers = [...orders]
-    .filter(
-      (order) =>
-        order.status === "売却済み" && !!order.transfer_date && order.transfer_date > today,
-    )
+    .filter((order) => order.status === "売却済み" && !!order.transfer_date && order.transfer_date > today)
     .sort((left, right) => (left.transfer_date ?? "").localeCompare(right.transfer_date ?? ""));
 
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysInMonth = new Date(currentYear, now.getMonth() + 1, 0).getDate();
   const profitByDate = new Map<string, number>();
 
   monthlySoldOrders.forEach((order) => {
@@ -132,6 +149,34 @@ export default async function DashboardPage() {
           helper={`${monthStart} 〜 ${monthEnd}`}
           icon={<PackageCheck className="h-5 w-5" />}
         />
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-semibold">{`年間実績（${currentYear}年）`}</h2>
+          <p className="mt-1 text-sm text-textSecondary">今年の売上、純利益、利益率、獲得ポイントを集計しています。</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="年間売上" value={formatCurrency(yearlySales)} icon={<Wallet className="h-5 w-5" />} />
+          <StatCard
+            label="年間純利益"
+            value={formatCurrency(yearlyProfit)}
+            helper={`${yearStart} 〜 ${yearEnd}`}
+            accent
+            icon={<TrendingUp className="h-5 w-5" />}
+          />
+          <StatCard
+            label="年間利益率"
+            value={formatPercent(yearlyProfitRate)}
+            helper={`純利益 / 売上`}
+            icon={<PackageCheck className="h-5 w-5" />}
+          />
+          <StatCard
+            label="年間獲得ポイント"
+            value={`${yearlyPoints.toLocaleString("ja-JP")} pt`}
+            icon={<Coins className="h-5 w-5" />}
+          />
+        </div>
       </section>
 
       <DashboardQueues arrivals={arrivals} storePickups={storePickups} transfers={transfers} />
