@@ -53,6 +53,27 @@ function toOptions(items: MasterOption[]) {
   }));
 }
 
+function toProductOptions(items: Product[]) {
+  return items.map((item) => ({
+    id: item.id,
+    name: [item.name, item.capacity, item.color].filter(Boolean).join(" "),
+  }));
+}
+
+function getProductDefaultPrice(product?: Product) {
+  if (!product) return null;
+
+  if (product.name === "iPhone 17 Pro" && product.capacity === "256GB") {
+    return 179800;
+  }
+
+  if (product.name === "iPhone 17 Pro Max" && product.capacity === "256GB") {
+    return 194800;
+  }
+
+  return null;
+}
+
 export function OrderForm({
   mode,
   order,
@@ -65,11 +86,12 @@ export function OrderForm({
   const [isPending, startTransition] = useTransition();
   const [submitMode, setSubmitMode] = useState<"default" | "continue">("default");
   const [form, setForm] = useState<OrderFormValues>(() => toOrderFormValues(order));
-  const [productOptions, setProductOptions] = useState<MasterOption[]>(() => toOptions(products));
+  const [productOptions, setProductOptions] = useState<MasterOption[]>(() => toProductOptions(products));
   const [supplierOptions, setSupplierOptions] = useState<MasterOption[]>(() => toOptions(suppliers));
   const [buyerOptions, setBuyerOptions] = useState<MasterOption[]>(() => toOptions(buyers));
   const [paymentOptions, setPaymentOptions] = useState<MasterOption[]>(() => toOptions(paymentAccounts));
 
+  const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const selectedProduct = useMemo(() => {
     return productOptions.find((item) => item.id === form.product_id)?.name ?? "未選択";
   }, [form.product_id, productOptions]);
@@ -80,6 +102,17 @@ export function OrderForm({
 
   const updateField = <K extends keyof OrderFormValues>(key: K, value: OrderFormValues[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleProductChange = (value: string) => {
+    const selectedProductData = productMap.get(value);
+    const defaultPrice = getProductDefaultPrice(selectedProductData);
+
+    setForm((current) => ({
+      ...current,
+      product_id: value,
+      purchase_price: defaultPrice ?? current.purchase_price,
+    }));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -132,7 +165,7 @@ export function OrderForm({
                 <MasterSelect
                   table="products"
                   value={form.product_id}
-                  onChange={(value) => updateField("product_id", value)}
+                  onChange={handleProductChange}
                   placeholder="商品を選択"
                   options={productOptions}
                   onOptionsChange={setProductOptions}
@@ -200,7 +233,7 @@ export function OrderForm({
                   table="payment_accounts"
                   value={form.payment_account_id}
                   onChange={(value) => updateField("payment_account_id", value)}
-                  placeholder="決済口座を選択"
+                  placeholder="口座・カードを選択"
                   options={paymentOptions}
                   onOptionsChange={setPaymentOptions}
                 />

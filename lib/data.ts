@@ -23,101 +23,91 @@ function handleError(context: string, error: unknown) {
   });
 }
 
+function filterDeletedRecords<T extends { deleted_at?: string | null }>(
+  records: T[],
+  includeDeleted: boolean,
+) {
+  return includeDeleted ? records : records.filter((record) => !record.deleted_at);
+}
+
 export async function getProducts(includeDeleted = false) {
-  let query = supabase
+  const { data, error } = await supabase
     .from("products")
     .select("*")
     .order("name", { ascending: true })
     .order("capacity", { ascending: true, nullsFirst: false })
     .order("color", { ascending: true, nullsFirst: false });
 
-  if (!includeDeleted) {
-    query = query.is("deleted_at", null);
-  }
-
-  const { data, error } = await query;
-
   if (error) {
+    console.log("[supabase:getProducts:error:raw]", error);
+    console.log("[supabase:getProducts:error:details]", {
+      type: typeof error,
+      constructorName:
+        error && typeof error === "object" && "constructor" in error
+          ? (error.constructor as { name?: string }).name
+          : undefined,
+      keys: error && typeof error === "object" ? Object.keys(error) : [],
+      ownPropertyNames: error && typeof error === "object" ? Object.getOwnPropertyNames(error) : [],
+      entries: error && typeof error === "object" ? Object.entries(error) : [],
+      stringified:
+        error && typeof error === "object" ? JSON.stringify(error, null, 2) : String(error),
+    });
     handleError("getProducts", error);
     return [] as Product[];
   }
 
-  return (data ?? []) as Product[];
+  return filterDeletedRecords((data ?? []) as Product[], includeDeleted);
 }
 
 export async function getSuppliers(includeDeleted = false) {
-  let query = supabase.from("suppliers").select("*").order("name", { ascending: true });
-
-  if (!includeDeleted) {
-    query = query.is("deleted_at", null);
-  }
-
-  const { data, error } = await query;
+  const { data, error } = await supabase.from("suppliers").select("*").order("name", { ascending: true });
 
   if (error) {
     handleError("getSuppliers", error);
     return [] as Supplier[];
   }
 
-  return (data ?? []) as Supplier[];
+  return filterDeletedRecords((data ?? []) as Supplier[], includeDeleted);
 }
 
 export async function getBuyers(includeDeleted = false) {
-  let query = supabase.from("buyers").select("*").order("name", { ascending: true });
-
-  if (!includeDeleted) {
-    query = query.is("deleted_at", null);
-  }
-
-  const { data, error } = await query;
+  const { data, error } = await supabase.from("buyers").select("*").order("name", { ascending: true });
 
   if (error) {
     handleError("getBuyers", error);
     return [] as Buyer[];
   }
 
-  return (data ?? []) as Buyer[];
+  return filterDeletedRecords((data ?? []) as Buyer[], includeDeleted);
 }
 
 export async function getPaymentAccounts(includeDeleted = false) {
-  let query = supabase
+  const { data, error } = await supabase
     .from("payment_accounts")
     .select("*")
     .order("name", { ascending: true });
-
-  if (!includeDeleted) {
-    query = query.is("deleted_at", null);
-  }
-
-  const { data, error } = await query;
 
   if (error) {
     handleError("getPaymentAccounts", error);
     return [] as PaymentAccount[];
   }
 
-  return (data ?? []) as PaymentAccount[];
+  return filterDeletedRecords((data ?? []) as PaymentAccount[], includeDeleted);
 }
 
 export async function getOrders(includeDeleted = false) {
-  let query = supabase
+  const { data, error } = await supabase
     .from("orders")
     .select(orderSelect)
     .order("order_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
-
-  if (!includeDeleted) {
-    query = query.is("deleted_at", null);
-  }
-
-  const { data, error } = await query;
 
   if (error) {
     handleError("getOrders", error);
     return [] as Order[];
   }
 
-  return (data ?? []) as Order[];
+  return filterDeletedRecords((data ?? []) as Order[], includeDeleted);
 }
 
 export async function getOrderById(id: string) {
@@ -156,7 +146,6 @@ export async function getSoldOrdersByRange(startDate: string, endDate: string) {
     .from("orders")
     .select(orderSelect)
     .eq("status", "売却済み")
-    .is("deleted_at", null)
     .gte("order_date", startDate)
     .lte("order_date", endDate)
     .order("order_date", { ascending: true });
@@ -166,5 +155,5 @@ export async function getSoldOrdersByRange(startDate: string, endDate: string) {
     return [] as Order[];
   }
 
-  return (data ?? []) as Order[];
+  return filterDeletedRecords((data ?? []) as Order[], false);
 }
