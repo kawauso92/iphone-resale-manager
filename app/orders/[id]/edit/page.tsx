@@ -30,6 +30,7 @@ export default async function EditOrderPage({ params }: EditOrderPageProps) {
         suppliers={collections.suppliers}
         buyers={collections.buyers}
         paymentAccounts={collections.paymentAccounts}
+        appleAccounts={collections.appleAccounts}
       />
     </div>
   );

@@ -1,12 +1,12 @@
 import Link from "next/link";
 
-import { EmptyState } from "@/components/ui/EmptyState";
 import { BreakdownBarChart } from "@/components/ui/BreakdownBarChart";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ProfitLineChart } from "@/components/ui/ProfitLineChart";
 import { StatCard } from "@/components/ui/StatCard";
 import { calcNetProfit, calcProfitRate } from "@/lib/calculations";
 import { REPORT_METRICS } from "@/lib/constants";
-import { getSoldOrdersByRange } from "@/lib/data";
+import { getOrdersByRange } from "@/lib/data";
 import { formatCurrency, formatPercent, toDateInputValue } from "@/lib/format";
 import { Order, ReportMetricKey } from "@/types";
 
@@ -75,6 +75,25 @@ function buildBreakdown(orders: Order[], getLabel: (order: Order) => string) {
   return Array.from(map.values()).sort((left, right) => right.profit - left.profit);
 }
 
+function buildAppleAccountBreakdown(orders: Order[]) {
+  const map = new Map<string, { label: string; count: number; exiled: number; profit: number }>();
+
+  orders.forEach((order) => {
+    const label = order.apple_accounts?.email ?? "未設定";
+    const current = map.get(label) ?? { label, count: 0, exiled: 0, profit: 0 };
+    current.count += 1;
+    if (order.status === "島流し") {
+      current.exiled += 1;
+    }
+    if (order.status === "売却済み") {
+      current.profit += calcNetProfit(order);
+    }
+    map.set(label, current);
+  });
+
+  return Array.from(map.values()).sort((left, right) => right.profit - left.profit);
+}
+
 function BreakdownSection({
   title,
   rows,
@@ -117,6 +136,46 @@ function BreakdownSection({
   );
 }
 
+function AppleAccountSection({
+  rows,
+}: {
+  rows: Array<{ label: string; count: number; exiled: number; profit: number }>;
+}) {
+  return (
+    <section className="card-base space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold">Appleアカウント別集計</h2>
+        <p className="mt-1 text-sm text-textSecondary">注文数、島流し台数、純利益をアカウント単位で表示します。</p>
+      </div>
+
+      <BreakdownBarChart data={rows.map((row) => ({ label: row.label, value: row.profit }))} />
+
+      <div className="overflow-x-auto rounded-xl border border-border">
+        <table className="min-w-full text-sm">
+          <thead className="bg-bgTertiary/60 text-left text-textSecondary">
+            <tr>
+              <th className="px-4 py-3">Appleアカウント</th>
+              <th className="px-4 py-3">注文数</th>
+              <th className="px-4 py-3">島流し台数</th>
+              <th className="px-4 py-3">純利益</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label} className="border-t border-border/70 hover:bg-bgTertiary">
+                <td className="px-4 py-3 font-medium">{row.label}</td>
+                <td className="px-4 py-3">{row.count}</td>
+                <td className="px-4 py-3">{row.exiled}</td>
+                <td className="px-4 py-3 text-accent">{formatCurrency(row.profit)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const params = (await searchParams) ?? {};
   const today = toDateInputValue();
@@ -129,18 +188,19 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const selectedMetrics = getArrayParam(params, "metrics") as ReportMetricKey[];
   const shouldRun = getParam(params, "run") === "1";
 
-  const orders = shouldRun ? await getSoldOrdersByRange(startDate, endDate) : [];
-  const metricsSet = new Set<ReportMetricKey>(selectedMetrics);
+  const allOrders = shouldRun ? await getOrdersByRange(startDate, endDate) : [];
+  const soldOrders = allOrders.filter((order) => order.status === "売却済み");
+  const metricsSet = new Set<ReportMetricKey>(selectedMetrics.length === 0 ? REPORT_METRICS.map((metric) => metric.key) : selectedMetrics);
 
-  const totalSales = orders.reduce((sum, order) => sum + order.sale_price, 0);
-  const totalProfit = orders.reduce((sum, order) => sum + calcNetProfit(order), 0);
-  const totalPoints = orders.reduce((sum, order) => sum + order.earned_points, 0);
-  const totalShipping = orders.reduce((sum, order) => sum + order.shipping_fee, 0);
-  const totalCommission = orders.reduce((sum, order) => sum + order.commission, 0);
-  const totalOtherExpenses = orders.reduce((sum, order) => sum + order.other_expenses, 0);
+  const totalSales = soldOrders.reduce((sum, order) => sum + order.sale_price, 0);
+  const totalProfit = soldOrders.reduce((sum, order) => sum + calcNetProfit(order), 0);
+  const totalPoints = allOrders.reduce((sum, order) => sum + order.earned_points, 0);
+  const totalShipping = soldOrders.reduce((sum, order) => sum + order.shipping_fee, 0);
+  const totalCommission = soldOrders.reduce((sum, order) => sum + order.commission, 0);
+  const totalOtherExpenses = soldOrders.reduce((sum, order) => sum + order.other_expenses, 0);
   const profitRate = calcProfitRate(totalProfit, totalSales);
 
-  const rotationSource = orders.filter((order) => order.order_date && order.sold_date);
+  const rotationSource = soldOrders.filter((order) => order.order_date && order.sold_date);
   const averageRotation =
     rotationSource.length > 0
       ? rotationSource.reduce((sum, order) => {
@@ -150,11 +210,12 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         }, 0) / rotationSource.length
       : 0;
 
-  const profitTrend = buildDailyProfitData(orders, startDate, endDate);
-  const byProduct = buildBreakdown(orders, (order) => describeProduct(order));
-  const bySupplier = buildBreakdown(orders, (order) => order.suppliers?.name ?? "未設定");
-  const byBuyer = buildBreakdown(orders, (order) => order.buyers?.name ?? "未設定");
-  const byPayment = buildBreakdown(orders, (order) => order.payment_accounts?.name ?? "未設定");
+  const profitTrend = buildDailyProfitData(soldOrders, startDate, endDate);
+  const byProduct = buildBreakdown(soldOrders, (order) => describeProduct(order));
+  const bySupplier = buildBreakdown(soldOrders, (order) => order.suppliers?.name ?? "未設定");
+  const byBuyer = buildBreakdown(soldOrders, (order) => order.buyers?.name ?? "未設定");
+  const byPayment = buildBreakdown(soldOrders, (order) => order.payment_accounts?.name ?? "未設定");
+  const byAppleAccount = buildAppleAccountBreakdown(allOrders);
 
   const clearLink = `/reports?run=1&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
 
@@ -192,9 +253,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                   type="checkbox"
                   name="metrics"
                   value={metric.key}
-                  defaultChecked={
-                    selectedMetrics.length === 0 ? true : metricsSet.has(metric.key)
-                  }
+                  defaultChecked={metricsSet.has(metric.key)}
                   className="h-4 w-4 rounded border-border bg-bgPrimary"
                 />
                 <span className="text-sm text-textPrimary">{metric.label}</span>
@@ -213,17 +272,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           title="レポートを実行してください"
           description="期間と集計項目を選び、集計実行ボタンで結果を表示します。"
         />
-      ) : orders.length === 0 ? (
+      ) : allOrders.length === 0 ? (
         <EmptyState
           title="対象データがありません"
-          description="指定期間内に売却済みの注文が見つかりませんでした。"
+          description="指定期間内の注文が見つかりませんでした。"
         />
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {metricsSet.has("sales") ? (
-              <StatCard label="売上総額" value={formatCurrency(totalSales)} />
-            ) : null}
+            {metricsSet.has("sales") ? <StatCard label="売上総額" value={formatCurrency(totalSales)} /> : null}
             {metricsSet.has("profit") ? (
               <StatCard
                 label="純利益"
@@ -262,6 +319,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           {metricsSet.has("supplier") ? <BreakdownSection title="仕入れ先別集計" rows={bySupplier} /> : null}
           {metricsSet.has("buyer") ? <BreakdownSection title="売却先別集計" rows={byBuyer} /> : null}
           {metricsSet.has("payment") ? <BreakdownSection title="決済口座別集計" rows={byPayment} /> : null}
+          {metricsSet.has("appleAccount") ? <AppleAccountSection rows={byAppleAccount} /> : null}
         </div>
       )}
     </div>

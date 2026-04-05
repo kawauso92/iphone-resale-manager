@@ -31,6 +31,12 @@ export type PaymentAccount = BaseEntity & {
   is_active: boolean;
 };
 
+export type AppleAccount = BaseEntity & {
+  email: string;
+  memo?: string | null;
+  is_active: boolean;
+};
+
 export type Order = BaseEntity & {
   product_id?: string | null;
   status: OrderStatus;
@@ -39,6 +45,7 @@ export type Order = BaseEntity & {
   supplier_id?: string | null;
   delivery_date?: string | null;
   payment_account_id?: string | null;
+  apple_account_id?: string | null;
   earned_points: number;
   serial_number?: string | null;
   order_number?: string | null;
@@ -54,9 +61,15 @@ export type Order = BaseEntity & {
   suppliers?: Supplier | null;
   buyers?: Buyer | null;
   payment_accounts?: PaymentAccount | null;
+  apple_accounts?: AppleAccount | null;
 };
 
-export type MasterTable = "products" | "suppliers" | "buyers" | "payment_accounts";
+export type MasterTable =
+  | "products"
+  | "suppliers"
+  | "buyers"
+  | "payment_accounts"
+  | "apple_accounts";
 
 export type MasterOption = {
   id: string;
@@ -72,6 +85,7 @@ export type OrderFormValues = {
   supplier_id: string;
   delivery_date: string;
   payment_account_id: string;
+  apple_account_id: string;
   earned_points: number;
   serial_number: string;
   order_number: string;
@@ -88,6 +102,13 @@ export type OrderFormValues = {
 export type MasterFormState = {
   id?: string;
   name: string;
+  is_active: boolean;
+};
+
+export type AppleAccountFormState = {
+  id?: string;
+  email: string;
+  memo: string;
   is_active: boolean;
 };
 
@@ -133,4 +154,5 @@ export type ReportMetricKey =
   | "product"
   | "supplier"
   | "buyer"
-  | "payment";
+  | "payment"
+  | "appleAccount";

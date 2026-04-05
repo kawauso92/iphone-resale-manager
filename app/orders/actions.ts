@@ -24,6 +24,7 @@ function sanitizeOrder(data: Partial<Order>) {
     supplier_id: cleanText(data.supplier_id),
     delivery_date: cleanText(data.delivery_date),
     payment_account_id: cleanText(data.payment_account_id),
+    apple_account_id: cleanText(data.apple_account_id),
     earned_points: cleanNumber(data.earned_points),
     serial_number: cleanText(data.serial_number),
     order_number: cleanText(data.order_number),
@@ -91,9 +92,7 @@ export async function duplicateOrder(id: string) {
   }
 
   const { id: _id, created_at: _createdAt, updated_at: _updatedAt, deleted_at: _deletedAt, ...copy } = data;
-  const { error: insertError } = await supabase
-    .from("orders")
-    .insert([{ ...copy, deleted_at: null }]);
+  const { error: insertError } = await supabase.from("orders").insert([{ ...copy, deleted_at: null }]);
 
   if (insertError) {
     console.error("[supabase:duplicateOrder:insert]", insertError);
@@ -125,6 +124,28 @@ export async function createInlineMaster(table: MasterTable, name: string): Prom
     revalidatePath("/products");
     revalidatePath("/orders");
     return data as MasterOption;
+  }
+
+  if (table === "apple_accounts") {
+    const { data, error } = await supabase
+      .from("apple_accounts")
+      .insert([{ email: trimmedName, is_active: true }])
+      .select("id, email, is_active")
+      .single();
+
+    if (error) {
+      console.error("[supabase:createInlineMaster:apple_accounts]", error);
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/orders");
+    revalidatePath("/apple-accounts");
+
+    return {
+      id: data.id,
+      name: data.email,
+      is_active: data.is_active,
+    };
   }
 
   const { data, error } = await supabase

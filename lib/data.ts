@@ -1,12 +1,13 @@
 import { supabase } from "@/lib/supabase";
-import { Buyer, Order, PaymentAccount, Product, Supplier } from "@/types";
+import { AppleAccount, Buyer, Order, PaymentAccount, Product, Supplier } from "@/types";
 
 export const orderSelect = `
   *,
   products(*),
   suppliers(*),
   buyers(*),
-  payment_accounts(*)
+  payment_accounts(*),
+  apple_accounts(*)
 `;
 
 function handleError(context: string, error: unknown) {
@@ -95,6 +96,20 @@ export async function getPaymentAccounts(includeDeleted = false) {
   return filterDeletedRecords((data ?? []) as PaymentAccount[], includeDeleted);
 }
 
+export async function getAppleAccounts(includeDeleted = false) {
+  const { data, error } = await supabase
+    .from("apple_accounts")
+    .select("*")
+    .order("email", { ascending: true });
+
+  if (error) {
+    handleError("getAppleAccounts", error);
+    return [] as AppleAccount[];
+  }
+
+  return filterDeletedRecords((data ?? []) as AppleAccount[], includeDeleted);
+}
+
 export async function getOrders(includeDeleted = false) {
   const { data, error } = await supabase
     .from("orders")
@@ -126,11 +141,12 @@ export async function getOrderById(id: string) {
 }
 
 export async function getMasterCollections() {
-  const [products, suppliers, buyers, paymentAccounts] = await Promise.all([
+  const [products, suppliers, buyers, paymentAccounts, appleAccounts] = await Promise.all([
     getProducts(),
     getSuppliers(),
     getBuyers(),
     getPaymentAccounts(),
+    getAppleAccounts(),
   ]);
 
   return {
@@ -138,7 +154,24 @@ export async function getMasterCollections() {
     suppliers,
     buyers,
     paymentAccounts,
+    appleAccounts,
   };
+}
+
+export async function getOrdersByRange(startDate: string, endDate: string) {
+  const { data, error } = await supabase
+    .from("orders")
+    .select(orderSelect)
+    .gte("order_date", startDate)
+    .lte("order_date", endDate)
+    .order("order_date", { ascending: true });
+
+  if (error) {
+    handleError("getOrdersByRange", error);
+    return [] as Order[];
+  }
+
+  return filterDeletedRecords((data ?? []) as Order[], false);
 }
 
 export async function getSoldOrdersByRange(startDate: string, endDate: string) {

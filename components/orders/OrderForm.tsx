@@ -11,7 +11,16 @@ import { PriceInput } from "@/components/ui/PriceInput";
 import { calcCostRate, calcNetProfit, calcProfitRate } from "@/lib/calculations";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { formatCurrency, formatPercent, toDateInputValue } from "@/lib/format";
-import { Buyer, MasterOption, Order, OrderFormValues, PaymentAccount, Product, Supplier } from "@/types";
+import {
+  AppleAccount,
+  Buyer,
+  MasterOption,
+  Order,
+  OrderFormValues,
+  PaymentAccount,
+  Product,
+  Supplier,
+} from "@/types";
 
 type OrderFormProps = {
   mode: "create" | "edit";
@@ -20,6 +29,7 @@ type OrderFormProps = {
   suppliers: Supplier[];
   buyers: Buyer[];
   paymentAccounts: PaymentAccount[];
+  appleAccounts: AppleAccount[];
 };
 
 function toOrderFormValues(order?: Order): OrderFormValues {
@@ -31,6 +41,7 @@ function toOrderFormValues(order?: Order): OrderFormValues {
     supplier_id: order?.supplier_id ?? "",
     delivery_date: order?.delivery_date ?? "",
     payment_account_id: order?.payment_account_id ?? "",
+    apple_account_id: order?.apple_account_id ?? "",
     earned_points: order?.earned_points ?? 0,
     serial_number: order?.serial_number ?? "",
     order_number: order?.order_number ?? "",
@@ -81,6 +92,7 @@ export function OrderForm({
   suppliers,
   buyers,
   paymentAccounts,
+  appleAccounts,
 }: OrderFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -90,6 +102,13 @@ export function OrderForm({
   const [supplierOptions, setSupplierOptions] = useState<MasterOption[]>(() => toOptions(suppliers));
   const [buyerOptions, setBuyerOptions] = useState<MasterOption[]>(() => toOptions(buyers));
   const [paymentOptions, setPaymentOptions] = useState<MasterOption[]>(() => toOptions(paymentAccounts));
+  const [appleAccountOptions, setAppleAccountOptions] = useState<MasterOption[]>(() =>
+    appleAccounts.map((account) => ({
+      id: account.id,
+      name: account.email,
+      is_active: account.is_active,
+    })),
+  );
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const selectedProduct = useMemo(() => {
@@ -192,6 +211,17 @@ export function OrderForm({
                   className="field-base"
                   value={form.order_date}
                   onChange={(event) => updateField("order_date", event.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="label-base">使用Appleアカウント</label>
+                <MasterSelect
+                  table="apple_accounts"
+                  value={form.apple_account_id}
+                  onChange={(value) => updateField("apple_account_id", value)}
+                  placeholder="Appleアカウントを選択"
+                  options={appleAccountOptions}
+                  onOptionsChange={setAppleAccountOptions}
                 />
               </div>
             </div>

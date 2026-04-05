@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { BarChart3, CreditCard, Home, Package2, ShoppingBag, Store, Users } from "lucide-react";
+import {
+  Apple,
+  BarChart3,
+  CreditCard,
+  Home,
+  Package2,
+  ShoppingBag,
+  Store,
+  Users,
+} from "lucide-react";
 
 import { APP_NAME } from "@/lib/constants";
 
@@ -13,6 +22,7 @@ const masterLinks = [
   { href: "/suppliers", label: "仕入れ先", icon: Store },
   { href: "/buyers", label: "販売先", icon: Users },
   { href: "/payment-accounts", label: "口座・カード", icon: CreditCard },
+  { href: "/apple-accounts", label: "Appleアカウント", icon: Apple },
 ];
 
 export function Sidebar() {

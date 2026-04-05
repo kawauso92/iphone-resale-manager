@@ -4,7 +4,7 @@ import { getMasterCollections } from "@/lib/data";
 export const dynamic = "force-dynamic";
 
 export default async function NewOrderPage() {
-  const { products, suppliers, buyers, paymentAccounts } = await getMasterCollections();
+  const { products, suppliers, buyers, paymentAccounts, appleAccounts } = await getMasterCollections();
 
   return (
     <div className="space-y-6">
@@ -18,6 +18,7 @@ export default async function NewOrderPage() {
         suppliers={suppliers}
         buyers={buyers}
         paymentAccounts={paymentAccounts}
+        appleAccounts={appleAccounts}
       />
     </div>
   );

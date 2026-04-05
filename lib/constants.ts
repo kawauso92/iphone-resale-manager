@@ -2,13 +2,13 @@ import { OrdersColumnKey, OrderStatus, ReportMetricKey } from "@/types";
 
 export const APP_NAME = "りんごの管理";
 
-export const ORDER_STATUSES: OrderStatus[] = [
+export const ORDER_STATUSES = [
   "発注済み",
   "入荷済み",
   "売却済み",
   "キャンセル",
   "島流し",
-];
+] as unknown as OrderStatus[];
 
 export const DEFAULT_ORDER_COLUMNS: OrdersColumnKey[] = [
   "product",
@@ -50,4 +50,5 @@ export const REPORT_METRICS: { key: ReportMetricKey; label: string }[] = [
   { key: "supplier", label: "仕入れ先別" },
   { key: "buyer", label: "売却先別" },
   { key: "payment", label: "決済口座別" },
+  { key: "appleAccount", label: "Appleアカウント別" },
 ];
