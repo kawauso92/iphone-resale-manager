@@ -4,7 +4,9 @@ import { getOrders, getProducts } from "@/lib/data";
 export const dynamic = "force-dynamic";
 
 export default async function OrdersPage() {
-  const [orders, products] = await Promise.all([getOrders(true), getProducts()]);
+  const [ordersResult, productsResult] = await Promise.allSettled([getOrders(true), getProducts()]);
+  const orders = ordersResult.status === "fulfilled" ? ordersResult.value : [];
+  const products = productsResult.status === "fulfilled" ? productsResult.value : [];
 
   return <OrdersPageClient orders={orders} products={products} />;
 }

@@ -9,9 +9,18 @@ export const orderSelect = `
   payment_accounts(*)
 `;
 
-function handleError(context: string, error: { message: string }) {
-  console.error(`[supabase:${context}]`, error);
-  throw new Error(error.message);
+function handleError(context: string, error: unknown) {
+  console.error(`[supabase:${context}]`, {
+    error,
+    serialized:
+      error instanceof Error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          }
+        : JSON.stringify(error, null, 2),
+  });
 }
 
 export async function getProducts(includeDeleted = false) {
@@ -30,6 +39,7 @@ export async function getProducts(includeDeleted = false) {
 
   if (error) {
     handleError("getProducts", error);
+    return [] as Product[];
   }
 
   return (data ?? []) as Product[];
@@ -46,6 +56,7 @@ export async function getSuppliers(includeDeleted = false) {
 
   if (error) {
     handleError("getSuppliers", error);
+    return [] as Supplier[];
   }
 
   return (data ?? []) as Supplier[];
@@ -62,6 +73,7 @@ export async function getBuyers(includeDeleted = false) {
 
   if (error) {
     handleError("getBuyers", error);
+    return [] as Buyer[];
   }
 
   return (data ?? []) as Buyer[];
@@ -81,6 +93,7 @@ export async function getPaymentAccounts(includeDeleted = false) {
 
   if (error) {
     handleError("getPaymentAccounts", error);
+    return [] as PaymentAccount[];
   }
 
   return (data ?? []) as PaymentAccount[];
@@ -101,6 +114,7 @@ export async function getOrders(includeDeleted = false) {
 
   if (error) {
     handleError("getOrders", error);
+    return [] as Order[];
   }
 
   return (data ?? []) as Order[];
@@ -115,9 +129,10 @@ export async function getOrderById(id: string) {
 
   if (error) {
     handleError("getOrderById", error);
+    return null;
   }
 
-  return data as Order;
+  return data as Order | null;
 }
 
 export async function getMasterCollections() {
@@ -148,6 +163,7 @@ export async function getSoldOrdersByRange(startDate: string, endDate: string) {
 
   if (error) {
     handleError("getSoldOrdersByRange", error);
+    return [] as Order[];
   }
 
   return (data ?? []) as Order[];
