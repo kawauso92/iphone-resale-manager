@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { deleteProduct, duplicateProduct, updateProduct } from "@/app/products/actions";
+import { deleteProduct, duplicateProduct, updateProduct } from "@/app/product-master/actions";
 import { DataTable } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDate } from "@/lib/format";
@@ -38,9 +38,7 @@ export function ProductMasterClient({ products }: ProductMasterClientProps) {
       .sort((left, right) => {
         const a = String(left[sortKey] ?? "");
         const b = String(right[sortKey] ?? "");
-        return sortDirection === "asc"
-          ? a.localeCompare(b, "ja")
-          : b.localeCompare(a, "ja");
+        return sortDirection === "asc" ? a.localeCompare(b, "ja") : b.localeCompare(a, "ja");
       });
   }, [products, search, showDeleted, sortDirection, sortKey]);
 
@@ -56,10 +54,11 @@ export function ProductMasterClient({ products }: ProductMasterClientProps) {
 
   const handleSave = () => {
     if (!editing?.id) return;
+    const editingId = editing.id;
 
     startTransition(async () => {
       try {
-        await updateProduct(editing.id!, editing);
+        await updateProduct(editingId, editing);
         toast.success("商品マスターを更新しました。");
         setEditing(null);
       } catch (error) {
@@ -102,10 +101,10 @@ export function ProductMasterClient({ products }: ProductMasterClientProps) {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">商品マスター</h1>
-          <p className="mt-1 text-sm text-textSecondary">モデル・容量・カラー・状態を管理します。</p>
+          <h1 className="text-3xl font-semibold">iPhone商品マスター</h1>
+          <p className="mt-1 text-sm text-textSecondary">モデル名、容量、カラー、状態を管理します。</p>
         </div>
-        <Link href="/products/new" className="button-primary">
+        <Link href="/product-master/new" className="button-primary">
           新規追加
         </Link>
       </div>
@@ -129,7 +128,7 @@ export function ProductMasterClient({ products }: ProductMasterClientProps) {
               onChange={(event) => setShowDeleted(event.target.checked)}
               className="h-4 w-4 rounded border-border bg-bgPrimary"
             />
-            <span className="text-sm text-textPrimary">削除済みを含む</span>
+            <span className="text-sm text-textPrimary">削除済みを含める</span>
           </label>
 
           {editing ? (
@@ -195,7 +194,7 @@ export function ProductMasterClient({ products }: ProductMasterClientProps) {
             <EmptyState
               title="商品マスターがありません"
               description="検索条件を見直すか、新規追加から商品を登録してください。"
-              actionHref="/products/new"
+              actionHref="/product-master/new"
               actionLabel="商品を追加"
             />
           ) : (
@@ -223,7 +222,7 @@ export function ProductMasterClient({ products }: ProductMasterClientProps) {
                         状態
                       </button>
                     </th>
-                    <th className="px-4 py-3">登録日</th>
+                    <th className="px-4 py-3">作成日</th>
                     <th className="px-4 py-3">操作</th>
                   </tr>
                 </thead>

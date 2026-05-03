@@ -1,10 +1,10 @@
-import { ProductMasterClient } from "@/components/masters/ProductMasterClient";
-import { getProducts } from "@/lib/data";
+import { ManagedProductsClient } from "@/components/products/ManagedProductsClient";
+import { getManagedProducts } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
-  const products = await getProducts(true);
+  const products = await getManagedProducts(true);
 
-  return <ProductMasterClient products={products} />;
+  return <ManagedProductsClient products={products} />;
 }

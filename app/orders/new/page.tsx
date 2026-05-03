@@ -9,7 +9,7 @@ export default async function NewOrderPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold">商品を作成</h1>
+        <h1 className="text-3xl font-semibold">注文を作成</h1>
         <p className="mt-1 text-sm text-textSecondary">発注から売却までの情報を登録します。</p>
       </div>
       <OrderForm

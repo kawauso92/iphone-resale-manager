@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Apple,
   BarChart3,
+  Boxes,
   CreditCard,
   Home,
   Package2,
@@ -14,11 +15,12 @@ import { APP_NAME } from "@/lib/constants";
 
 const primaryLinks = [
   { href: "/", label: "トップ", icon: Home },
-  { href: "/orders", label: "商品管理", icon: Package2 },
+  { href: "/orders", label: "iPhone管理", icon: Package2 },
+  { href: "/products", label: "汎用商品管理", icon: Boxes },
 ];
 
 const masterLinks = [
-  { href: "/products", label: "商品マスター", icon: ShoppingBag },
+  { href: "/product-master", label: "iPhone商品マスター", icon: ShoppingBag },
   { href: "/suppliers", label: "仕入れ先", icon: Store },
   { href: "/buyers", label: "販売先", icon: Users },
   { href: "/payment-accounts", label: "口座・カード", icon: CreditCard },

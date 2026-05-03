@@ -106,7 +106,7 @@ export async function createInlineMaster(table: MasterTable, name: string): Prom
   const trimmedName = name.trim();
 
   if (!trimmedName) {
-    throw new Error("名称を入力してください。");
+    throw new Error("名前を入力してください。");
   }
 
   if (table === "products") {
@@ -121,7 +121,7 @@ export async function createInlineMaster(table: MasterTable, name: string): Prom
       throw new Error(error.message);
     }
 
-    revalidatePath("/products");
+    revalidatePath("/product-master");
     revalidatePath("/orders");
     return data as MasterOption;
   }

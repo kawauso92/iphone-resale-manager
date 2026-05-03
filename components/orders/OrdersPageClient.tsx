@@ -160,7 +160,7 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
     startTransition(async () => {
       try {
         await duplicateOrder(id);
-        toast.success("商品を複製しました。");
+        toast.success("注文を複製しました。");
       } catch (error) {
         console.error("[orders:duplicate]", error);
         toast.error(error instanceof Error ? error.message : "複製に失敗しました。");
@@ -169,12 +169,12 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (!window.confirm("この商品を削除済みにしますか？")) return;
+    if (!window.confirm("この注文を削除済みにしますか？")) return;
 
     startTransition(async () => {
       try {
         await deleteOrder(id);
-        toast.success("商品を削除しました。");
+        toast.success("注文を削除しました。");
       } catch (error) {
         console.error("[orders:delete]", error);
         toast.error(error instanceof Error ? error.message : "削除に失敗しました。");
@@ -234,9 +234,9 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">商品管理</h1>
+          <h1 className="text-3xl font-semibold">iPhone管理</h1>
           <p className="mt-1 text-sm text-textSecondary">
-            発注から売却までの全案件を一覧管理します。表示件数: {filteredOrders.length}件
+            発注から売却までの注文を一覧で管理します。表示件数: {filteredOrders.length}件
           </p>
         </div>
         <Link href="/orders/new" className="button-primary">
@@ -338,10 +338,10 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
 
           {paginatedOrders.length === 0 ? (
             <EmptyState
-              title="該当する商品がありません"
-              description="フィルタ条件を見直すか、新しい案件を登録してください。"
+              title="該当する注文がありません"
+              description="フィルタ条件を見直すか、新しい注文を作成してください。"
               actionHref="/orders/new"
-              actionLabel="商品を作成"
+              actionLabel="注文を追加"
             />
           ) : (
             <>

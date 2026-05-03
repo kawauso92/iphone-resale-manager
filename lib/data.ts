@@ -1,5 +1,13 @@
 import { supabase } from "@/lib/supabase";
-import { AppleAccount, Buyer, Order, PaymentAccount, Product, Supplier } from "@/types";
+import {
+  AppleAccount,
+  Buyer,
+  ManagedProduct,
+  Order,
+  PaymentAccount,
+  Product,
+  Supplier,
+} from "@/types";
 
 export const orderSelect = `
   *,
@@ -58,6 +66,36 @@ export async function getProducts(includeDeleted = false) {
   }
 
   return filterDeletedRecords((data ?? []) as Product[], includeDeleted);
+}
+
+export async function getManagedProducts(includeDeleted = false) {
+  const { data, error } = await supabase
+    .from("managed_products")
+    .select("*")
+    .order("purchase_date", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    handleError("getManagedProducts", error);
+    return [] as ManagedProduct[];
+  }
+
+  return filterDeletedRecords((data ?? []) as ManagedProduct[], includeDeleted);
+}
+
+export async function getManagedProductById(id: string) {
+  const { data, error } = await supabase
+    .from("managed_products")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    handleError("getManagedProductById", error);
+    return null;
+  }
+
+  return data as ManagedProduct | null;
 }
 
 export async function getSuppliers(includeDeleted = false) {

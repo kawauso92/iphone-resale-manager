@@ -1,5 +1,8 @@
 export type OrderStatus = "発注済み" | "入荷済み" | "売却済み" | "キャンセル" | "島流し";
 
+export type ManagedProductStatus = "ordered" | "arrived" | "sold" | "canceled";
+export type ManagedProductDecision = "buy" | "hold" | "skip";
+
 export type ProductCondition = "未開封" | "開封済み" | "傷あり" | "ジャンク";
 
 export type BaseEntity = {
@@ -64,6 +67,23 @@ export type Order = BaseEntity & {
   apple_accounts?: AppleAccount | null;
 };
 
+export type ManagedProduct = BaseEntity & {
+  name: string;
+  category: string;
+  purchase_date: string;
+  purchase_source: string;
+  purchase_price: number;
+  sell_source?: string | null;
+  sell_expected_price: number;
+  sell_price?: number | null;
+  points?: number | null;
+  shipping_cost?: number | null;
+  fee?: number | null;
+  memo?: string | null;
+  status: ManagedProductStatus;
+  sold_date?: string | null;
+};
+
 export type MasterTable =
   | "products"
   | "suppliers"
@@ -118,6 +138,23 @@ export type ProductFormState = {
   capacity: string;
   color: string;
   condition: ProductCondition;
+};
+
+export type ManagedProductFormValues = {
+  name: string;
+  category: string;
+  purchase_date: string;
+  purchase_source: string;
+  purchase_price: number;
+  sell_source: string;
+  sell_expected_price: number;
+  sell_price: number | null;
+  points: number | null;
+  shipping_cost: number | null;
+  fee: number | null;
+  memo: string;
+  status: ManagedProductStatus;
+  sold_date: string;
 };
 
 export type DashboardProfitPoint = {

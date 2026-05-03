@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { createProduct } from "@/app/products/actions";
+import { createProduct } from "@/app/product-master/actions";
 import { ProductCondition, ProductFormState } from "@/types";
 
 const defaultState: ProductFormState = {
@@ -33,11 +33,11 @@ export function ProductCreateForm() {
       try {
         await createProduct(form);
         toast.success("商品マスターを追加しました。");
-        router.push("/products");
+        router.push("/product-master");
         router.refresh();
       } catch (error) {
         console.error("[product-create-form]", error);
-        toast.error(error instanceof Error ? error.message : "作成に失敗しました。");
+        toast.error(error instanceof Error ? error.message : "保存に失敗しました。");
       }
     });
   };
@@ -45,7 +45,7 @@ export function ProductCreateForm() {
   return (
     <form onSubmit={handleSubmit} className="card-base max-w-2xl space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold">商品マスターを追加</h1>
+        <h1 className="text-2xl font-semibold">iPhone商品マスターを追加</h1>
         <p className="mt-1 text-sm text-textSecondary">モデル名、容量、カラー、状態を登録します。</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -94,9 +94,9 @@ export function ProductCreateForm() {
       </div>
       <div className="flex gap-3">
         <button type="submit" className="button-primary" disabled={isPending}>
-          作成
+          保存
         </button>
-        <Link href="/products" className="button-secondary">
+        <Link href="/product-master" className="button-secondary">
           キャンセル
         </Link>
       </div>

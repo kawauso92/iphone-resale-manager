@@ -56,9 +56,7 @@ function QueueList({
             </div>
             <div className="text-right">
               <p className="text-sm text-textSecondary">
-                {type === "transfer"
-                  ? formatDate(order.transfer_date)
-                  : formatDate(order.delivery_date)}
+                {type === "transfer" ? formatDate(order.transfer_date) : formatDate(order.delivery_date)}
               </p>
               <p className="mt-1 text-sm font-medium">
                 {type === "transfer" ? formatCurrency(order.sale_price) : formatCurrency(order.purchase_price)}
@@ -97,21 +95,21 @@ export function DashboardQueues({ arrivals, storePickups, transfers }: Dashboard
       <div className="grid gap-6 xl:grid-cols-3">
         <QueueList
           title="到着予定の商品"
-          description="delivery_date が今日以降の案件"
+          description="delivery_date が本日以降の注文"
           items={arrivals}
           limit={limit}
           type="arrival"
         />
         <QueueList
           title="店舗受取予定の商品"
-          description="店舗系仕入れ先かつ未入荷の案件"
+          description="店舗系の仕入れ先かつ未入荷の注文"
           items={storePickups}
           limit={limit}
           type="pickup"
         />
         <QueueList
           title="振り込み予定"
-          description="transfer_date が未来で売却済みの案件"
+          description="transfer_date が未来の売却済み注文"
           items={transfers}
           limit={limit}
           type="transfer"

@@ -111,9 +111,10 @@ export function OrderForm({
   );
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
-  const selectedProduct = useMemo(() => {
-    return productOptions.find((item) => item.id === form.product_id)?.name ?? "未選択";
-  }, [form.product_id, productOptions]);
+  const selectedProduct = useMemo(
+    () => productOptions.find((item) => item.id === form.product_id)?.name ?? "未選択",
+    [form.product_id, productOptions],
+  );
 
   const netProfit = calcNetProfit(form);
   const profitRate = calcProfitRate(netProfit, form.sale_price);
@@ -152,7 +153,7 @@ export function OrderForm({
           await updateOrder(order.id, payload);
         }
 
-        toast.success(mode === "create" ? "商品を登録しました。" : "商品を更新しました。");
+        toast.success(mode === "create" ? "注文を作成しました。" : "注文を更新しました。");
 
         if (mode === "create" && submitMode === "continue") {
           setForm(toOrderFormValues());
@@ -176,7 +177,7 @@ export function OrderForm({
           <section className="card-base space-y-4">
             <div>
               <h2 className="text-lg font-semibold">基本情報</h2>
-              <p className="mt-1 text-sm text-textSecondary">注文の起点となる情報を登録します。</p>
+              <p className="mt-1 text-sm text-textSecondary">注文の基本情報を入力します。</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -230,7 +231,7 @@ export function OrderForm({
           <section className="card-base space-y-4">
             <div>
               <h2 className="text-lg font-semibold">仕入れ詳細</h2>
-              <p className="mt-1 text-sm text-textSecondary">仕入れ先、配送予定、決済情報を管理します。</p>
+              <p className="mt-1 text-sm text-textSecondary">仕入れ先、配送予定、使用カードを管理します。</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -258,7 +259,7 @@ export function OrderForm({
                 />
               </div>
               <div className="space-y-2">
-                <label className="label-base">使用カード・口座</label>
+                <label className="label-base">使用カード / 口座</label>
                 <MasterSelect
                   table="payment_accounts"
                   value={form.payment_account_id}
@@ -302,7 +303,7 @@ export function OrderForm({
           <section className="card-base space-y-4">
             <div>
               <h2 className="text-lg font-semibold">売却・利益</h2>
-              <p className="mt-1 text-sm text-textSecondary">売却情報と付随コストを入力します。</p>
+              <p className="mt-1 text-sm text-textSecondary">売却情報と関連コストを入力します。</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -359,7 +360,7 @@ export function OrderForm({
           <section className="card-base space-y-4">
             <div>
               <h2 className="text-lg font-semibold">メモ</h2>
-              <p className="mt-1 text-sm text-textSecondary">取引上の補足を残せます。</p>
+              <p className="mt-1 text-sm text-textSecondary">補足情報があれば記録します。</p>
             </div>
             <textarea
               rows={5}

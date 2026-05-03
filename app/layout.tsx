@@ -14,7 +14,7 @@ const notoSansJp = Noto_Sans_JP({
 
 export const metadata: Metadata = {
   title: "りんごの管理",
-  description: "iPhone転売の仕入れから売却までを一元管理するダッシュボード",
+  description: "iPhone転売と汎用商品の仕入れから売却までを一元管理するダッシュボードです。",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

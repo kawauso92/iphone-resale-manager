@@ -1,5 +1,5 @@
-import { ProductCreateForm } from "@/components/masters/ProductCreateForm";
+import { ManagedProductForm } from "@/components/products/ManagedProductForm";
 
 export default function NewProductPage() {
-  return <ProductCreateForm />;
+  return <ManagedProductForm mode="create" />;
 }

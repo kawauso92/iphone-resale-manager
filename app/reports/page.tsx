@@ -105,7 +105,7 @@ function BreakdownSection({
     <section className="card-base space-y-6">
       <div>
         <h2 className="text-xl font-semibold">{title}</h2>
-        <p className="mt-1 text-sm text-textSecondary">純利益ベースで集計しています。</p>
+        <p className="mt-1 text-sm text-textSecondary">利益ベースで並べ替えて表示します。</p>
       </div>
 
       <BreakdownBarChart data={rows.map((row) => ({ label: row.label, value: row.profit }))} />
@@ -145,7 +145,9 @@ function AppleAccountSection({
     <section className="card-base space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Appleアカウント別集計</h2>
-        <p className="mt-1 text-sm text-textSecondary">注文数、島流し台数、純利益をアカウント単位で表示します。</p>
+        <p className="mt-1 text-sm text-textSecondary">
+          注文数、島流し台数、純利益をアカウントごとに表示します。
+        </p>
       </div>
 
       <BreakdownBarChart data={rows.map((row) => ({ label: row.label, value: row.profit }))} />
@@ -190,7 +192,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   const allOrders = shouldRun ? await getOrdersByRange(startDate, endDate) : [];
   const soldOrders = allOrders.filter((order) => order.status === "売却済み");
-  const metricsSet = new Set<ReportMetricKey>(selectedMetrics.length === 0 ? REPORT_METRICS.map((metric) => metric.key) : selectedMetrics);
+  const metricsSet = new Set<ReportMetricKey>(
+    selectedMetrics.length === 0 ? REPORT_METRICS.map((metric) => metric.key) : selectedMetrics,
+  );
 
   const totalSales = soldOrders.reduce((sum, order) => sum + order.sale_price, 0);
   const totalProfit = soldOrders.reduce((sum, order) => sum + calcNetProfit(order), 0);
@@ -223,7 +227,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold">月次収支レポート</h1>
-        <p className="mt-1 text-sm text-textSecondary">注文日基準で期間集計し、利益や内訳を確認できます。</p>
+        <p className="mt-1 text-sm text-textSecondary">
+          注文日ベースで期間を指定し、利益や内訳を確認できます。
+        </p>
       </div>
 
       <form className="card-base space-y-6" action="/reports">
@@ -248,7 +254,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {REPORT_METRICS.map((metric) => (
-              <label key={metric.key} className="flex items-center gap-3 rounded-lg border border-border bg-bgSecondary px-4 py-3">
+              <label
+                key={metric.key}
+                className="flex items-center gap-3 rounded-lg border border-border bg-bgSecondary px-4 py-3"
+              >
                 <input
                   type="checkbox"
                   name="metrics"
@@ -275,7 +284,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       ) : allOrders.length === 0 ? (
         <EmptyState
           title="対象データがありません"
-          description="指定期間内の注文が見つかりませんでした。"
+          description="指定期間の注文が見つかりませんでした。"
         />
       ) : (
         <div className="space-y-6">

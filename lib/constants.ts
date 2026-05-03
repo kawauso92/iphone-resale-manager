@@ -1,14 +1,14 @@
-import { OrdersColumnKey, OrderStatus, ReportMetricKey } from "@/types";
+import {
+  ManagedProductDecision,
+  ManagedProductStatus,
+  OrdersColumnKey,
+  OrderStatus,
+  ReportMetricKey,
+} from "@/types";
 
 export const APP_NAME = "りんごの管理";
 
-export const ORDER_STATUSES = [
-  "発注済み",
-  "入荷済み",
-  "売却済み",
-  "キャンセル",
-  "島流し",
-] as unknown as OrderStatus[];
+export const ORDER_STATUSES: OrderStatus[] = ["発注済み", "入荷済み", "売却済み", "キャンセル", "島流し"];
 
 export const DEFAULT_ORDER_COLUMNS: OrdersColumnKey[] = [
   "product",
@@ -34,11 +34,7 @@ export const OPTIONAL_ORDER_COLUMNS: OrdersColumnKey[] = [
   "memo",
 ];
 
-export const STORE_SUPPLIER_NAMES = [
-  "アップルストア心斎橋",
-  "アップルストア梅田",
-  "アップルストア銀座",
-];
+export const STORE_SUPPLIER_NAMES = ["アップルストア心斎橋", "アップルストア梅田", "アップルストア銀座"];
 
 export const REPORT_METRICS: { key: ReportMetricKey; label: string }[] = [
   { key: "sales", label: "売上総額" },
@@ -52,3 +48,26 @@ export const REPORT_METRICS: { key: ReportMetricKey; label: string }[] = [
   { key: "payment", label: "決済口座別" },
   { key: "appleAccount", label: "Appleアカウント別" },
 ];
+
+export const MANAGED_PRODUCT_STATUSES: Array<{
+  value: ManagedProductStatus;
+  label: string;
+}> = [
+  { value: "ordered", label: "発注中" },
+  { value: "arrived", label: "在庫あり" },
+  { value: "sold", label: "売却済み" },
+  { value: "canceled", label: "キャンセル" },
+];
+
+export const MANAGED_PRODUCT_STATUS_LABELS: Record<ManagedProductStatus, string> = {
+  ordered: "発注中",
+  arrived: "在庫あり",
+  sold: "売却済み",
+  canceled: "キャンセル",
+};
+
+export const MANAGED_PRODUCT_DECISION_LABELS: Record<ManagedProductDecision, string> = {
+  buy: "buy",
+  hold: "hold",
+  skip: "skip",
+};

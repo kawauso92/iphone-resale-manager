@@ -20,8 +20,8 @@ export default async function EditOrderPage({ params }: EditOrderPageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold">商品を編集</h1>
-        <p className="mt-1 text-sm text-textSecondary">登録済み案件の内容を更新します。</p>
+        <h1 className="text-3xl font-semibold">注文を編集</h1>
+        <p className="mt-1 text-sm text-textSecondary">保存済みの注文内容を更新します。</p>
       </div>
       <OrderForm
         mode="edit"
