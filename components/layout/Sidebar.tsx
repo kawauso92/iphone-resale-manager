@@ -3,7 +3,8 @@ import {
   Apple,
   BarChart3,
   Boxes,
-  CreditCard,
+ CreditCard,
+  Grid2x2,
   Home,
   Package2,
   ShoppingBag,
@@ -21,6 +22,7 @@ const primaryLinks = [
 
 const masterLinks = [
   { href: "/product-master", label: "iPhone商品マスター", icon: ShoppingBag },
+  { href: "/product-categories", label: "カテゴリ", icon: Grid2x2 },
   { href: "/suppliers", label: "仕入れ先", icon: Store },
   { href: "/buyers", label: "販売先", icon: Users },
   { href: "/payment-accounts", label: "口座・カード", icon: CreditCard },

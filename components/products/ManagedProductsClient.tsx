@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { deleteManagedProduct, duplicateManagedProduct } from "@/app/products/actions";
@@ -13,13 +13,16 @@ import {
 } from "@/lib/calculations";
 import { MANAGED_PRODUCT_STATUSES } from "@/lib/constants";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
-import { ManagedProduct } from "@/types";
+import { Buyer, ManagedProduct, ProductCategory, Supplier } from "@/types";
 import { DataTable } from "../ui/DataTable";
 import { EmptyState } from "../ui/EmptyState";
 import { ManagedProductDecisionBadge, ManagedProductStatusBadge } from "./ManagedProductBadge";
 
 type ManagedProductsClientProps = {
   products: ManagedProduct[];
+  suppliers: Supplier[];
+  buyers: Buyer[];
+  categories: ProductCategory[];
 };
 
 type SortKey =
@@ -35,7 +38,17 @@ type SortKey =
 
 type SortDirection = "asc" | "desc";
 
-export function ManagedProductsClient({ products }: ManagedProductsClientProps) {
+function resolveLabel(value: string | null | undefined, items: Array<{ id: string; name: string }>, fallback = " - ") {
+  if (!value) return fallback;
+  return items.find((item) => item.id === value)?.name ?? value;
+}
+
+export function ManagedProductsClient({
+  products,
+  suppliers,
+  buyers,
+  categories,
+}: ManagedProductsClientProps) {
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -48,24 +61,9 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
   const [sortKey, setSortKey] = useState<SortKey>("purchase_price");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  const categories = useMemo(
-    () => Array.from(new Set(products.map((product) => product.category).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ja")),
-    [products],
-  );
-  const purchaseSources = useMemo(
-    () =>
-      Array.from(new Set(products.map((product) => product.purchase_source).filter(Boolean))).sort((a, b) =>
-        a.localeCompare(b, "ja"),
-      ),
-    [products],
-  );
-  const sellSources = useMemo(
-    () =>
-      Array.from(new Set(products.map((product) => product.sell_source).filter(Boolean) as string[])).sort((a, b) =>
-        a.localeCompare(b, "ja"),
-      ),
-    [products],
-  );
+  const categoryOptions = useMemo(() => categories.map(({ id, name }) => ({ id, name })), [categories]);
+  const supplierOptions = useMemo(() => suppliers.map(({ id, name }) => ({ id, name })), [suppliers]);
+  const buyerOptions = useMemo(() => buyers.map(({ id, name }) => ({ id, name })), [buyers]);
 
   const filteredProducts = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -73,9 +71,17 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
     return products
       .filter((product) => (showDeleted ? true : !product.deleted_at))
       .filter((product) => (keyword ? product.name.toLowerCase().includes(keyword) : true))
-      .filter((product) => (categoryFilter === "all" ? true : product.category === categoryFilter))
-      .filter((product) => (purchaseSourceFilter === "all" ? true : product.purchase_source === purchaseSourceFilter))
-      .filter((product) => (sellSourceFilter === "all" ? true : (product.sell_source ?? "") === sellSourceFilter))
+      .filter((product) =>
+        categoryFilter === "all" ? true : resolveLabel(product.category, categoryOptions, "iPhone") === categoryFilter,
+      )
+      .filter((product) =>
+        purchaseSourceFilter === "all"
+          ? true
+          : resolveLabel(product.purchase_source, supplierOptions) === purchaseSourceFilter,
+      )
+      .filter((product) =>
+        sellSourceFilter === "all" ? true : resolveLabel(product.sell_source, buyerOptions) === sellSourceFilter,
+      )
       .filter((product) => (statusFilter === "all" ? true : product.status === statusFilter))
       .filter((product) => (dateFrom ? product.purchase_date >= dateFrom : true))
       .filter((product) => (dateTo ? product.purchase_date <= dateTo : true))
@@ -92,7 +98,10 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
             case "name":
               return left.name.localeCompare(right.name, "ja");
             case "category":
-              return left.category.localeCompare(right.category, "ja");
+              return resolveLabel(left.category, categoryOptions, "iPhone").localeCompare(
+                resolveLabel(right.category, categoryOptions, "iPhone"),
+                "ja",
+              );
             case "purchase_price":
               return left.purchase_price - right.purchase_price;
             case "sell_expected_price":
@@ -115,24 +124,45 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
         return sortDirection === "asc" ? compareValue : compareValue * -1;
       });
   }, [
+    products,
+    showDeleted,
+    search,
     categoryFilter,
+    purchaseSourceFilter,
+    sellSourceFilter,
+    statusFilter,
     dateFrom,
     dateTo,
-    products,
-    purchaseSourceFilter,
-    search,
-    sellSourceFilter,
-    showDeleted,
-    sortDirection,
     sortKey,
-    statusFilter,
+    sortDirection,
+    categoryOptions,
+    supplierOptions,
+    buyerOptions,
   ]);
 
-  useEffect(() => {
-    if (!filteredProducts.some((product) => product.deleted_at) && showDeleted) {
-      return;
-    }
-  }, [filteredProducts, showDeleted]);
+  const categoryNames = useMemo(
+    () =>
+      Array.from(new Set(products.map((product) => resolveLabel(product.category, categoryOptions, "iPhone")))).sort(
+        (a, b) => a.localeCompare(b, "ja"),
+      ),
+    [products, categoryOptions],
+  );
+
+  const purchaseSourceNames = useMemo(
+    () =>
+      Array.from(new Set(products.map((product) => resolveLabel(product.purchase_source, supplierOptions))))
+        .filter((value) => value !== " - ")
+        .sort((a, b) => a.localeCompare(b, "ja")),
+    [products, supplierOptions],
+  );
+
+  const sellSourceNames = useMemo(
+    () =>
+      Array.from(new Set(products.map((product) => resolveLabel(product.sell_source, buyerOptions))))
+        .filter((value) => value !== " - ")
+        .sort((a, b) => a.localeCompare(b, "ja")),
+    [products, buyerOptions],
+  );
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -200,9 +230,9 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
             <label className="label-base">カテゴリ</label>
             <select className="field-base" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
               <option value="all">すべて</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+              {categoryNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
                 </option>
               ))}
             </select>
@@ -215,9 +245,9 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
               onChange={(event) => setPurchaseSourceFilter(event.target.value)}
             >
               <option value="all">すべて</option>
-              {purchaseSources.map((source) => (
-                <option key={source} value={source}>
-                  {source}
+              {purchaseSourceNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
                 </option>
               ))}
             </select>
@@ -226,9 +256,9 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
             <label className="label-base">売却先</label>
             <select className="field-base" value={sellSourceFilter} onChange={(event) => setSellSourceFilter(event.target.value)}>
               <option value="all">すべて</option>
-              {sellSources.map((source) => (
-                <option key={source} value={source}>
-                  {source}
+              {sellSourceNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
                 </option>
               ))}
             </select>
@@ -288,6 +318,8 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
                         カテゴリ
                       </button>
                     </th>
+                    <th className="px-4 py-3">仕入先</th>
+                    <th className="px-4 py-3">売却先</th>
                     <th className="px-4 py-3">
                       <button type="button" onClick={() => handleSort("purchase_price")}>
                         仕入価格
@@ -338,19 +370,17 @@ export function ManagedProductsClient({ products }: ManagedProductsClientProps) 
                       <tr key={product.id} className="border-b border-border/70 hover:bg-bgTertiary">
                         <td className="px-4 py-3">
                           <div className="font-medium">{product.name}</div>
-                          <div className="mt-1 text-xs text-textSecondary">
-                            仕入日: {formatDate(product.purchase_date)}
-                          </div>
+                          <div className="mt-1 text-xs text-textSecondary">仕入日: {formatDate(product.purchase_date)}</div>
                           {product.deleted_at ? <div className="text-xs text-danger">削除済み</div> : null}
                         </td>
-                        <td className="px-4 py-3">{product.category}</td>
+                        <td className="px-4 py-3">{resolveLabel(product.category, categoryOptions, "iPhone")}</td>
+                        <td className="px-4 py-3">{resolveLabel(product.purchase_source, supplierOptions)}</td>
+                        <td className="px-4 py-3">{resolveLabel(product.sell_source, buyerOptions)}</td>
                         <td className="px-4 py-3">{formatCurrency(product.purchase_price)}</td>
                         <td className="px-4 py-3">{formatCurrency(product.sell_expected_price)}</td>
                         <td className="px-4 py-3">{product.sell_price ? formatCurrency(product.sell_price) : " - "}</td>
                         <td className="px-4 py-3 font-medium text-accent">{formatCurrency(profit)}</td>
-                        <td className="px-4 py-3">
-                          {formatPercent(profitRate !== null ? profitRate * 100 : null)}
-                        </td>
+                        <td className="px-4 py-3">{formatPercent(profitRate !== null ? profitRate * 100 : null)}</td>
                         <td className="px-4 py-3">{daysHeld === null ? " - " : `${daysHeld}日`}</td>
                         <td className="px-4 py-3">
                           <ManagedProductStatusBadge status={product.status} />

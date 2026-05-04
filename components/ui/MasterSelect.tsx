@@ -36,9 +36,7 @@ export function MasterSelect({
     startTransition(async () => {
       try {
         const created = await createInlineMaster(table, newName);
-        const nextOptions = [...options, created].sort((left, right) =>
-          left.name.localeCompare(right.name, "ja"),
-        );
+        const nextOptions = [...options, created].sort((left, right) => left.name.localeCompare(right.name, "ja"));
 
         onOptionsChange(nextOptions);
         onChange(created.id);

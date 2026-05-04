@@ -39,6 +39,17 @@ function sanitizeOrder(data: Partial<Order>) {
   };
 }
 
+function masterRoute(table: MasterTable) {
+  switch (table) {
+    case "payment_accounts":
+      return "/payment-accounts";
+    case "product_categories":
+      return "/product-categories";
+    default:
+      return `/${table}`;
+  }
+}
+
 function revalidateOrderPaths() {
   revalidatePath("/");
   revalidatePath("/orders");
@@ -106,7 +117,7 @@ export async function createInlineMaster(table: MasterTable, name: string): Prom
   const trimmedName = name.trim();
 
   if (!trimmedName) {
-    throw new Error("名前を入力してください。");
+    throw new Error("名称を入力してください。");
   }
 
   if (table === "products") {
@@ -160,7 +171,8 @@ export async function createInlineMaster(table: MasterTable, name: string): Prom
   }
 
   revalidatePath("/orders");
-  revalidatePath(`/${table === "payment_accounts" ? "payment-accounts" : table}`);
+  revalidatePath("/products");
+  revalidatePath(masterRoute(table));
 
   return data as MasterOption;
 }

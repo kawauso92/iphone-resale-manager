@@ -10,21 +10,36 @@ import {
   duplicatePaymentAccount,
   updatePaymentAccount,
 } from "@/app/payment-accounts/actions";
+import {
+  deleteProductCategory,
+  duplicateProductCategory,
+  updateProductCategory,
+} from "@/app/product-categories/actions";
 import { deleteSupplier, duplicateSupplier, updateSupplier } from "@/app/suppliers/actions";
 import { DataTable } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDate } from "@/lib/format";
-import { Buyer, MasterFormState, PaymentAccount, Supplier } from "@/types";
+import { Buyer, MasterFormState, PaymentAccount, ProductCategory, Supplier } from "@/types";
 
-type ResourceType = "suppliers" | "buyers" | "payment-accounts";
-
-type Item = Supplier | Buyer | PaymentAccount;
+type ResourceType = "suppliers" | "buyers" | "payment-accounts" | "product-categories";
+type Item = Supplier | Buyer | PaymentAccount | ProductCategory;
 
 type SimpleMasterClientProps = {
   type: ResourceType;
   title: string;
   items: Item[];
 };
+
+function routeFor(type: ResourceType) {
+  switch (type) {
+    case "payment-accounts":
+      return "/payment-accounts";
+    case "product-categories":
+      return "/product-categories";
+    default:
+      return `/${type}`;
+  }
+}
 
 export function SimpleMasterClient({ type, title, items }: SimpleMasterClientProps) {
   const [isPending, startTransition] = useTransition();
@@ -39,10 +54,7 @@ export function SimpleMasterClient({ type, title, items }: SimpleMasterClientPro
 
     return items
       .filter((item) => (showDeleted ? true : !item.deleted_at))
-      .filter((item) => {
-        if (!keyword) return true;
-        return item.name.toLowerCase().includes(keyword);
-      })
+      .filter((item) => (keyword ? item.name.toLowerCase().includes(keyword) : true))
       .sort((left, right) => {
         if (sortKey === "is_active") {
           return sortDirection === "asc"
@@ -68,15 +80,18 @@ export function SimpleMasterClient({ type, title, items }: SimpleMasterClientPro
 
   const handleSave = () => {
     if (!editing?.id) return;
+    const editingId = editing.id;
 
     startTransition(async () => {
       try {
         if (type === "suppliers") {
-          await updateSupplier(editing.id!, editing);
+          await updateSupplier(editingId, editing);
         } else if (type === "buyers") {
-          await updateBuyer(editing.id!, editing);
+          await updateBuyer(editingId, editing);
+        } else if (type === "payment-accounts") {
+          await updatePaymentAccount(editingId, editing);
         } else {
-          await updatePaymentAccount(editing.id!, editing);
+          await updateProductCategory(editingId, editing);
         }
 
         toast.success(`${title}を更新しました。`);
@@ -95,8 +110,10 @@ export function SimpleMasterClient({ type, title, items }: SimpleMasterClientPro
           await duplicateSupplier(id);
         } else if (type === "buyers") {
           await duplicateBuyer(id);
-        } else {
+        } else if (type === "payment-accounts") {
           await duplicatePaymentAccount(id);
+        } else {
+          await duplicateProductCategory(id);
         }
 
         toast.success(`${title}を複製しました。`);
@@ -116,8 +133,10 @@ export function SimpleMasterClient({ type, title, items }: SimpleMasterClientPro
           await deleteSupplier(id);
         } else if (type === "buyers") {
           await deleteBuyer(id);
-        } else {
+        } else if (type === "payment-accounts") {
           await deletePaymentAccount(id);
+        } else {
+          await deleteProductCategory(id);
         }
 
         toast.success(`${title}を削除しました。`);
@@ -136,9 +155,9 @@ export function SimpleMasterClient({ type, title, items }: SimpleMasterClientPro
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold">{title}</h1>
-          <p className="mt-1 text-sm text-textSecondary">有効フラグを含めてマスターを管理します。</p>
+          <p className="mt-1 text-sm text-textSecondary">名称と有効フラグを管理します。</p>
         </div>
-        <Link href={`/${type}/new`} className="button-primary">
+        <Link href={`${routeFor(type)}/new`} className="button-primary">
           新規追加
         </Link>
       </div>
@@ -162,7 +181,7 @@ export function SimpleMasterClient({ type, title, items }: SimpleMasterClientPro
               onChange={(event) => setShowDeleted(event.target.checked)}
               className="h-4 w-4 rounded border-border bg-bgPrimary"
             />
-            <span className="text-sm text-textPrimary">削除済みを含む</span>
+            <span className="text-sm text-textPrimary">削除済みを含める</span>
           </label>
 
           {editing ? (
@@ -210,7 +229,7 @@ export function SimpleMasterClient({ type, title, items }: SimpleMasterClientPro
             <EmptyState
               title={`${title}がありません`}
               description="検索条件を見直すか、新規追加から登録してください。"
-              actionHref={`/${type}/new`}
+              actionHref={`${routeFor(type)}/new`}
               actionLabel="新規追加"
             />
           ) : (
@@ -228,7 +247,7 @@ export function SimpleMasterClient({ type, title, items }: SimpleMasterClientPro
                         有効
                       </button>
                     </th>
-                    <th className="px-4 py-3">登録日</th>
+                    <th className="px-4 py-3">作成日</th>
                     <th className="px-4 py-3">操作</th>
                   </tr>
                 </thead>

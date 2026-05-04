@@ -15,11 +15,7 @@ function cleanRequiredText(value?: string | null) {
 }
 
 function cleanNumber(value?: number | null, fallback = 0) {
-  if (value === null || value === undefined || value === Number.NaN) {
-    return fallback;
-  }
-
-  const parsed = Number(value);
+  const parsed = Number(value ?? fallback);
   return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
 }
 
@@ -125,9 +121,7 @@ export async function duplicateManagedProduct(id: string) {
   }
 
   const { id: _id, created_at: _createdAt, updated_at: _updatedAt, deleted_at: _deletedAt, ...copy } = data;
-  const { error: insertError } = await supabase
-    .from("managed_products")
-    .insert([{ ...copy, deleted_at: null }]);
+  const { error: insertError } = await supabase.from("managed_products").insert([{ ...copy, deleted_at: null }]);
 
   if (insertError) {
     console.error("[supabase:duplicateManagedProduct:insert]", insertError);

@@ -67,11 +67,7 @@ export async function deletePaymentAccount(id: string) {
 }
 
 export async function duplicatePaymentAccount(id: string) {
-  const { data, error } = await supabase
-    .from("payment_accounts")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data, error } = await supabase.from("payment_accounts").select("*").eq("id", id).single();
 
   if (error) {
     console.error("[supabase:duplicatePaymentAccount:select]", error);

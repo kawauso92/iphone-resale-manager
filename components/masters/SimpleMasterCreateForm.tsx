@@ -7,11 +7,12 @@ import { toast } from "sonner";
 
 import { createBuyer } from "@/app/buyers/actions";
 import { createPaymentAccount } from "@/app/payment-accounts/actions";
+import { createProductCategory } from "@/app/product-categories/actions";
 import { createSupplier } from "@/app/suppliers/actions";
 import { MasterFormState } from "@/types";
 
 type SimpleMasterCreateFormProps = {
-  type: "suppliers" | "buyers" | "payment-accounts";
+  type: "suppliers" | "buyers" | "payment-accounts" | "product-categories";
   title: string;
 };
 
@@ -19,6 +20,17 @@ const defaultState: MasterFormState = {
   name: "",
   is_active: true,
 };
+
+function routeFor(type: SimpleMasterCreateFormProps["type"]) {
+  switch (type) {
+    case "payment-accounts":
+      return "/payment-accounts";
+    case "product-categories":
+      return "/product-categories";
+    default:
+      return `/${type}`;
+  }
+}
 
 export function SimpleMasterCreateForm({ type, title }: SimpleMasterCreateFormProps) {
   const router = useRouter();
@@ -34,16 +46,18 @@ export function SimpleMasterCreateForm({ type, title }: SimpleMasterCreateFormPr
           await createSupplier(form);
         } else if (type === "buyers") {
           await createBuyer(form);
-        } else {
+        } else if (type === "payment-accounts") {
           await createPaymentAccount(form);
+        } else {
+          await createProductCategory(form);
         }
 
         toast.success(`${title}を追加しました。`);
-        router.push(`/${type}`);
+        router.push(routeFor(type));
         router.refresh();
       } catch (error) {
         console.error("[simple-master-create-form]", error);
-        toast.error(error instanceof Error ? error.message : "作成に失敗しました。");
+        toast.error(error instanceof Error ? error.message : "保存に失敗しました。");
       }
     });
   };
@@ -75,9 +89,9 @@ export function SimpleMasterCreateForm({ type, title }: SimpleMasterCreateFormPr
       </label>
       <div className="flex gap-3">
         <button type="submit" className="button-primary" disabled={isPending}>
-          作成
+          保存
         </button>
-        <Link href={`/${type}`} className="button-secondary">
+        <Link href={routeFor(type)} className="button-secondary">
           キャンセル
         </Link>
       </div>

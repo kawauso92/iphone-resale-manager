@@ -1,3 +1,8 @@
+insert into product_categories (name, is_active)
+values
+  ('iPhone', true)
+on conflict do nothing;
+
 insert into products (name, capacity, color, condition)
 values
   ('iPhone 17 Pro', '256GB', 'シルバー', '未開封'),

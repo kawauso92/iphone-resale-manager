@@ -16,6 +16,7 @@ function sanitizeSupplier(data: Partial<Supplier>) {
 function revalidateSupplierPaths() {
   revalidatePath("/suppliers");
   revalidatePath("/orders");
+  revalidatePath("/products");
 }
 
 export async function createSupplier(data: Partial<Supplier>) {

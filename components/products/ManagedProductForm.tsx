@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { createManagedProduct, updateManagedProduct } from "@/app/products/actions";
+import { MasterSelect } from "@/components/ui/MasterSelect";
 import {
   calcManagedProductDaysHeld,
   calcManagedProductProfit,
@@ -14,11 +15,21 @@ import {
 } from "@/lib/calculations";
 import { MANAGED_PRODUCT_STATUSES } from "@/lib/constants";
 import { formatCurrency, formatPercent, toDateInputValue } from "@/lib/format";
-import { ManagedProduct, ManagedProductFormValues } from "@/types";
+import {
+  Buyer,
+  ManagedProduct,
+  ManagedProductFormValues,
+  MasterOption,
+  ProductCategory,
+  Supplier,
+} from "@/types";
 
 type ManagedProductFormProps = {
   mode: "create" | "edit";
   product?: ManagedProduct;
+  suppliers: Supplier[];
+  buyers: Buyer[];
+  categories: ProductCategory[];
 };
 
 function toNullableNumber(value: string) {
@@ -78,15 +89,29 @@ function MoneyField({
   );
 }
 
-export function ManagedProductForm({ mode, product }: ManagedProductFormProps) {
+function toOptions(items: Array<{ id: string; name: string; is_active: boolean }>): MasterOption[] {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    is_active: item.is_active,
+  }));
+}
+
+export function ManagedProductForm({
+  mode,
+  product,
+  suppliers,
+  buyers,
+  categories,
+}: ManagedProductFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState<ManagedProductFormValues>(() => createInitialValues(product));
+  const [supplierOptions, setSupplierOptions] = useState<MasterOption[]>(() => toOptions(suppliers));
+  const [buyerOptions, setBuyerOptions] = useState<MasterOption[]>(() => toOptions(buyers));
+  const [categoryOptions, setCategoryOptions] = useState<MasterOption[]>(() => toOptions(categories));
 
-  const updateField = <K extends keyof ManagedProductFormValues>(
-    key: K,
-    value: ManagedProductFormValues[K],
-  ) => {
+  const updateField = <K extends keyof ManagedProductFormValues>(key: K, value: ManagedProductFormValues[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
@@ -160,12 +185,13 @@ export function ManagedProductForm({ mode, product }: ManagedProductFormProps) {
             </div>
             <div className="space-y-2">
               <label className="label-base">カテゴリ</label>
-              <input
-                type="text"
+              <MasterSelect
+                table="product_categories"
                 value={form.category}
-                onChange={(event) => updateField("category", event.target.value)}
-                className="field-base"
-                required
+                onChange={(value) => updateField("category", value)}
+                placeholder="カテゴリを選択"
+                options={categoryOptions}
+                onOptionsChange={setCategoryOptions}
               />
             </div>
             <div className="space-y-2">
@@ -200,12 +226,13 @@ export function ManagedProductForm({ mode, product }: ManagedProductFormProps) {
             </div>
             <div className="space-y-2">
               <label className="label-base">仕入先</label>
-              <input
-                type="text"
+              <MasterSelect
+                table="suppliers"
                 value={form.purchase_source}
-                onChange={(event) => updateField("purchase_source", event.target.value)}
-                className="field-base"
-                required
+                onChange={(value) => updateField("purchase_source", value)}
+                placeholder="仕入先を選択"
+                options={supplierOptions}
+                onOptionsChange={setSupplierOptions}
               />
             </div>
             <MoneyField
@@ -233,11 +260,13 @@ export function ManagedProductForm({ mode, product }: ManagedProductFormProps) {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="label-base">売却先</label>
-              <input
-                type="text"
+              <MasterSelect
+                table="buyers"
                 value={form.sell_source}
-                onChange={(event) => updateField("sell_source", event.target.value)}
-                className="field-base"
+                onChange={(value) => updateField("sell_source", value)}
+                placeholder="売却先を選択"
+                options={buyerOptions}
+                onOptionsChange={setBuyerOptions}
               />
             </div>
             <div className="space-y-2">

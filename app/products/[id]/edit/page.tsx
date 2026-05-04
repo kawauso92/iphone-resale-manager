@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ManagedProductForm } from "@/components/products/ManagedProductForm";
-import { getManagedProductById } from "@/lib/data";
+import { getManagedProductById, getManagedProductCollections } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +11,19 @@ type EditManagedProductPageProps = {
 
 export default async function EditManagedProductPage({ params }: EditManagedProductPageProps) {
   const { id } = await params;
-  const product = await getManagedProductById(id);
+  const [product, collections] = await Promise.all([getManagedProductById(id), getManagedProductCollections()]);
 
   if (!product) {
     notFound();
   }
 
-  return <ManagedProductForm mode="edit" product={product} />;
+  return (
+    <ManagedProductForm
+      mode="edit"
+      product={product}
+      suppliers={collections.suppliers}
+      buyers={collections.buyers}
+      categories={collections.categories}
+    />
+  );
 }

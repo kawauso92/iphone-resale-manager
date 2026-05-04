@@ -6,6 +6,7 @@ import {
   Order,
   PaymentAccount,
   Product,
+  ProductCategory,
   Supplier,
 } from "@/types";
 
@@ -84,11 +85,7 @@ export async function getManagedProducts(includeDeleted = false) {
 }
 
 export async function getManagedProductById(id: string) {
-  const { data, error } = await supabase
-    .from("managed_products")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data, error } = await supabase.from("managed_products").select("*").eq("id", id).single();
 
   if (error) {
     handleError("getManagedProductById", error);
@@ -121,10 +118,7 @@ export async function getBuyers(includeDeleted = false) {
 }
 
 export async function getPaymentAccounts(includeDeleted = false) {
-  const { data, error } = await supabase
-    .from("payment_accounts")
-    .select("*")
-    .order("name", { ascending: true });
+  const { data, error } = await supabase.from("payment_accounts").select("*").order("name", { ascending: true });
 
   if (error) {
     handleError("getPaymentAccounts", error);
@@ -135,10 +129,7 @@ export async function getPaymentAccounts(includeDeleted = false) {
 }
 
 export async function getAppleAccounts(includeDeleted = false) {
-  const { data, error } = await supabase
-    .from("apple_accounts")
-    .select("*")
-    .order("email", { ascending: true });
+  const { data, error } = await supabase.from("apple_accounts").select("*").order("email", { ascending: true });
 
   if (error) {
     handleError("getAppleAccounts", error);
@@ -146,6 +137,17 @@ export async function getAppleAccounts(includeDeleted = false) {
   }
 
   return filterDeletedRecords((data ?? []) as AppleAccount[], includeDeleted);
+}
+
+export async function getProductCategories(includeDeleted = false) {
+  const { data, error } = await supabase.from("product_categories").select("*").order("name", { ascending: true });
+
+  if (error) {
+    handleError("getProductCategories", error);
+    return [] as ProductCategory[];
+  }
+
+  return filterDeletedRecords((data ?? []) as ProductCategory[], includeDeleted);
 }
 
 export async function getOrders(includeDeleted = false) {
@@ -164,11 +166,7 @@ export async function getOrders(includeDeleted = false) {
 }
 
 export async function getOrderById(id: string) {
-  const { data, error } = await supabase
-    .from("orders")
-    .select(orderSelect)
-    .eq("id", id)
-    .single();
+  const { data, error } = await supabase.from("orders").select(orderSelect).eq("id", id).single();
 
   if (error) {
     handleError("getOrderById", error);
@@ -193,6 +191,20 @@ export async function getMasterCollections() {
     buyers,
     paymentAccounts,
     appleAccounts,
+  };
+}
+
+export async function getManagedProductCollections() {
+  const [suppliers, buyers, categories] = await Promise.all([
+    getSuppliers(),
+    getBuyers(),
+    getProductCategories(),
+  ]);
+
+  return {
+    suppliers,
+    buyers,
+    categories,
   };
 }
 

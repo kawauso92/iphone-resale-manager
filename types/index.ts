@@ -40,6 +40,11 @@ export type AppleAccount = BaseEntity & {
   is_active: boolean;
 };
 
+export type ProductCategory = BaseEntity & {
+  name: string;
+  is_active: boolean;
+};
+
 export type Order = BaseEntity & {
   product_id?: string | null;
   status: OrderStatus;
@@ -89,7 +94,8 @@ export type MasterTable =
   | "suppliers"
   | "buyers"
   | "payment_accounts"
-  | "apple_accounts";
+  | "apple_accounts"
+  | "product_categories";
 
 export type MasterOption = {
   id: string;
@@ -119,6 +125,23 @@ export type OrderFormValues = {
   memo: string;
 };
 
+export type ManagedProductFormValues = {
+  name: string;
+  category: string;
+  purchase_date: string;
+  purchase_source: string;
+  purchase_price: number;
+  sell_source: string;
+  sell_expected_price: number;
+  sell_price: number | null;
+  points: number | null;
+  shipping_cost: number | null;
+  fee: number | null;
+  memo: string;
+  status: ManagedProductStatus;
+  sold_date: string;
+};
+
 export type MasterFormState = {
   id?: string;
   name: string;
@@ -138,23 +161,6 @@ export type ProductFormState = {
   capacity: string;
   color: string;
   condition: ProductCondition;
-};
-
-export type ManagedProductFormValues = {
-  name: string;
-  category: string;
-  purchase_date: string;
-  purchase_source: string;
-  purchase_price: number;
-  sell_source: string;
-  sell_expected_price: number;
-  sell_price: number | null;
-  points: number | null;
-  shipping_cost: number | null;
-  fee: number | null;
-  memo: string;
-  status: ManagedProductStatus;
-  sold_date: string;
 };
 
 export type DashboardProfitPoint = {

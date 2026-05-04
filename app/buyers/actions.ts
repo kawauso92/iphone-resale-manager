@@ -16,6 +16,7 @@ function sanitizeBuyer(data: Partial<Buyer>) {
 function revalidateBuyerPaths() {
   revalidatePath("/buyers");
   revalidatePath("/orders");
+  revalidatePath("/products");
 }
 
 export async function createBuyer(data: Partial<Buyer>) {

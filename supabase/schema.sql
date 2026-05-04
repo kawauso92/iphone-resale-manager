@@ -46,6 +46,15 @@ create table if not exists payment_accounts (
   deleted_at timestamp
 );
 
+create table if not exists product_categories (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  is_active boolean default true,
+  created_at timestamp default now(),
+  updated_at timestamp default now(),
+  deleted_at timestamp
+);
+
 create table if not exists apple_accounts (
   id uuid primary key default gen_random_uuid(),
   email text not null,
@@ -124,6 +133,12 @@ execute function update_updated_at_column();
 drop trigger if exists set_payment_accounts_updated_at on payment_accounts;
 create trigger set_payment_accounts_updated_at
 before update on payment_accounts
+for each row
+execute function update_updated_at_column();
+
+drop trigger if exists set_product_categories_updated_at on product_categories;
+create trigger set_product_categories_updated_at
+before update on product_categories
 for each row
 execute function update_updated_at_column();
 
