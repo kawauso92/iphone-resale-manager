@@ -26,6 +26,8 @@ export const DEFAULT_ORDER_COLUMNS: OrdersColumnKey[] = [
 
 export const OPTIONAL_ORDER_COLUMNS: OrdersColumnKey[] = [
   "earned_points",
+  "profit",
+  "profit_with_points",
   "shipping_fee",
   "commission",
   "other_expenses",

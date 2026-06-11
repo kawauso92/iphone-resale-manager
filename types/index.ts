@@ -177,6 +177,8 @@ export type OrdersColumnKey =
   | "delivery_date"
   | "payment_account"
   | "earned_points"
+  | "profit"
+  | "profit_with_points"
   | "serial_number"
   | "order_number"
   | "buyer"

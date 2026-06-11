@@ -8,6 +8,7 @@ import { deleteOrder, duplicateOrder } from "@/app/orders/actions";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { calcNetProfit } from "@/lib/calculations";
 import { DEFAULT_ORDER_COLUMNS, OPTIONAL_ORDER_COLUMNS, ORDER_STATUSES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { Order, OrdersColumnKey, Product } from "@/types";
@@ -19,6 +20,14 @@ type OrdersPageClientProps = {
 
 type SortDirection = "asc" | "desc";
 
+const ORDER_COLUMNS_STORAGE_KEY = "orders.visibleColumns.v1";
+const ORDER_COLUMNS_COOKIE_KEY = "orders_visible_columns_v1";
+const ORDER_COLUMN_KEYS = [...DEFAULT_ORDER_COLUMNS, ...OPTIONAL_ORDER_COLUMNS] as OrdersColumnKey[];
+const DEFAULT_VISIBLE_COLUMNS = [
+  ...DEFAULT_ORDER_COLUMNS,
+  ...OPTIONAL_ORDER_COLUMNS.filter((key) => !["serial_number", "order_number", "memo"].includes(key)),
+];
+
 const columnLabels: Record<OrdersColumnKey, string> = {
   product: "商品",
   status: "ステータス",
@@ -28,6 +37,8 @@ const columnLabels: Record<OrdersColumnKey, string> = {
   delivery_date: "配送予定",
   payment_account: "使用口座",
   earned_points: "獲得ポイント",
+  profit: "利益",
+  profit_with_points: "利益+ポイント",
   serial_number: "シリアル番号",
   order_number: "注文番号",
   buyer: "売却先",
@@ -39,6 +50,54 @@ const columnLabels: Record<OrdersColumnKey, string> = {
   sold_date: "売却日",
   memo: "メモ",
 };
+
+function isOrdersColumnKey(value: string): value is OrdersColumnKey {
+  return ORDER_COLUMN_KEYS.includes(value as OrdersColumnKey);
+}
+
+function getProfitWithPoints(order: Order) {
+  return calcNetProfit(order) + order.earned_points;
+}
+
+function getCookieValue(name: string) {
+  return document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(`${name}=`))
+    ?.slice(name.length + 1);
+}
+
+function getStoredVisibleColumns() {
+  try {
+    const stored = window.localStorage?.getItem(ORDER_COLUMNS_STORAGE_KEY);
+    if (stored) return stored;
+  } catch (error) {
+    console.warn("[orders:visible-columns:local-storage]", error);
+  }
+
+  try {
+    const stored = getCookieValue(ORDER_COLUMNS_COOKIE_KEY);
+    return stored ? decodeURIComponent(stored) : null;
+  } catch (error) {
+    console.warn("[orders:visible-columns:cookie]", error);
+    return null;
+  }
+}
+
+function storeVisibleColumns(columns: OrdersColumnKey[]) {
+  const serialized = JSON.stringify(columns);
+
+  try {
+    window.localStorage?.setItem(ORDER_COLUMNS_STORAGE_KEY, serialized);
+  } catch (error) {
+    console.warn("[orders:visible-columns:local-storage]", error);
+  }
+
+  try {
+    document.cookie = `${ORDER_COLUMNS_COOKIE_KEY}=${encodeURIComponent(serialized)}; path=/; max-age=31536000; SameSite=Lax`;
+  } catch (error) {
+    console.warn("[orders:visible-columns:cookie]", error);
+  }
+}
 
 function describeProduct(order: Order) {
   if (!order.products) return " - ";
@@ -65,6 +124,10 @@ function getSortValue(order: Order, key: OrdersColumnKey): string | number {
       return order.payment_accounts?.name ?? "";
     case "earned_points":
       return order.earned_points;
+    case "profit":
+      return calcNetProfit(order);
+    case "profit_with_points":
+      return getProfitWithPoints(order);
     case "serial_number":
       return order.serial_number ?? "";
     case "order_number":
@@ -101,10 +164,8 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<OrdersColumnKey>("order_date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [visibleColumns, setVisibleColumns] = useState<OrdersColumnKey[]>([
-    ...DEFAULT_ORDER_COLUMNS,
-    ...OPTIONAL_ORDER_COLUMNS.filter((key) => !["serial_number", "order_number", "memo"].includes(key)),
-  ]);
+  const [visibleColumns, setVisibleColumns] = useState<OrdersColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [hasLoadedVisibleColumns, setHasLoadedVisibleColumns] = useState(false);
 
   const filteredOrders = useMemo(() => {
     return orders
@@ -133,6 +194,33 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
   useEffect(() => {
     setCurrentPage(1);
   }, [includeDeleted, statusFilter, productFilter, dateFrom, dateTo, pageSize, sortKey, sortDirection]);
+
+  useEffect(() => {
+    try {
+      const stored = getStoredVisibleColumns();
+      const parsed = stored ? JSON.parse(stored) : null;
+
+      if (Array.isArray(parsed)) {
+        const restored = parsed.filter(
+          (column, index): column is OrdersColumnKey =>
+            typeof column === "string" && isOrdersColumnKey(column) && parsed.indexOf(column) === index,
+        );
+
+        if (restored.length > 0) {
+          setVisibleColumns(restored);
+        }
+      }
+    } catch (error) {
+      console.warn("[orders:visible-columns]", error);
+    } finally {
+      setHasLoadedVisibleColumns(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedVisibleColumns) return;
+    storeVisibleColumns(visibleColumns);
+  }, [hasLoadedVisibleColumns, visibleColumns]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -205,6 +293,10 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
         return order.payment_accounts?.name ?? " - ";
       case "earned_points":
         return `${order.earned_points.toLocaleString("ja-JP")} pt`;
+      case "profit":
+        return formatCurrency(calcNetProfit(order));
+      case "profit_with_points":
+        return formatCurrency(getProfitWithPoints(order));
       case "serial_number":
         return order.serial_number ?? " - ";
       case "order_number":
@@ -300,7 +392,7 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
               <span className="text-xs text-textSecondary">{visibleColumns.length}列</span>
             </div>
             <div className="mt-3 grid gap-2">
-              {([...DEFAULT_ORDER_COLUMNS, ...OPTIONAL_ORDER_COLUMNS] as OrdersColumnKey[]).map((column) => (
+              {ORDER_COLUMN_KEYS.map((column) => (
                 <label key={column} className="flex items-center gap-3 text-sm text-textPrimary">
                   <input
                     type="checkbox"

@@ -95,6 +95,8 @@ export default async function DashboardPage() {
   const confirmedPoints =
     monthlySoldOrders.reduce((sum, order) => sum + order.earned_points, 0) +
     monthlySoldManagedProducts.reduce((sum, product) => sum + (product.points ?? 0), 0);
+  const monthlyOrderPoints = monthlySoldOrders.reduce((sum, order) => sum + order.earned_points, 0);
+  const monthlyProfitWithPoints = monthlyProfit + monthlyOrderPoints;
 
   const expectedPoints =
     orders
@@ -107,6 +109,8 @@ export default async function DashboardPage() {
   const yearlyPoints =
     yearlySoldOrders.reduce((sum, order) => sum + order.earned_points, 0) +
     yearlySoldManagedProducts.reduce((sum, product) => sum + (product.points ?? 0), 0);
+  const yearlyOrderPoints = yearlySoldOrders.reduce((sum, order) => sum + order.earned_points, 0);
+  const yearlyProfitWithPoints = yearlyProfit + yearlyOrderPoints;
 
   const todayDeliveries = orders.filter((order) => order.delivery_date === today);
   const exiledOrders = orders.filter((order) => order.status === "島流し");
@@ -168,6 +172,13 @@ export default async function DashboardPage() {
           icon={<TrendingUp className="h-5 w-5" />}
         />
         <StatCard
+          label="今月の利益+ポイント"
+          value={formatCurrency(monthlyProfitWithPoints)}
+          helper="純利益 + 獲得ポイント"
+          accent
+          icon={<Coins className="h-5 w-5" />}
+        />
+        <StatCard
           label="現在庫資産 / 在庫数"
           value={formatCurrency(inventoryValue)}
           helper={`${inventoryCount} 件`}
@@ -217,6 +228,13 @@ export default async function DashboardPage() {
             helper={`${yearStart} 〜 ${yearEnd}`}
             accent
             icon={<TrendingUp className="h-5 w-5" />}
+          />
+          <StatCard
+            label="年間利益+ポイント"
+            value={formatCurrency(yearlyProfitWithPoints)}
+            helper="純利益 + 獲得ポイント"
+            accent
+            icon={<Coins className="h-5 w-5" />}
           />
           <StatCard
             label="年間利益率"
