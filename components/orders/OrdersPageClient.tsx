@@ -57,6 +57,28 @@ const columnLabels: Record<OrdersColumnKey, string> = {
   memo: "メモ",
 };
 
+const COLOR_ABBREVIATIONS: Record<string, string> = {
+  コズミックオレンジ: "橙",
+  シルバー: "銀",
+  ディープブルー: "青",
+  ブラック: "黒",
+  ホワイト: "白",
+  ナチュラル: "自",
+  ブルー: "青",
+  ピンク: "桃",
+  グリーン: "緑",
+  イエロー: "黄",
+  パープル: "紫",
+  レッド: "赤",
+};
+
+const CONDITION_ABBREVIATIONS: Record<string, string> = {
+  未開封: "未",
+  開封済み: "開",
+  傷あり: "傷",
+  ジャンク: "難",
+};
+
 function isOrdersColumnKey(value: string): value is OrdersColumnKey {
   return ORDER_COLUMN_KEYS.includes(value as OrdersColumnKey);
 }
@@ -172,6 +194,40 @@ function describeProduct(order: Order) {
   return [order.products.name, order.products.capacity, order.products.color, order.products.condition]
     .filter(Boolean)
     .join(" / ");
+}
+
+function abbreviateProduct(product: Product | null | undefined) {
+  if (!product) return " - ";
+
+  const generation = product.name.match(/iPhone\s*(\d+)/i)?.[1] ?? product.name.replace(/^iPhone\s*/i, "");
+  const series = product.name.includes("Pro Max")
+    ? "PM"
+    : product.name.includes("Pro")
+      ? "P"
+      : product.name.includes("Plus")
+        ? "+"
+        : "";
+  const capacity = product.capacity?.replace(/\s+/g, "").replace(/GB$/i, "").replace(/TB$/i, "T") ?? "";
+  const color = product.color ? (COLOR_ABBREVIATIONS[product.color] ?? product.color.slice(0, 1)) : "";
+  const condition = product.condition ? (CONDITION_ABBREVIATIONS[product.condition] ?? product.condition.slice(0, 1)) : "";
+
+  return `${generation}${series}${capacity}${color}${condition}`;
+}
+
+function abbreviateEmail(email: string | null | undefined) {
+  if (!email) return " - ";
+  const [localPart] = email.split("@");
+  return localPart.length > 10 ? `${localPart.slice(0, 10)}...` : localPart;
+}
+
+function TruncatedCell({ value, className = "max-w-[140px]" }: { value: string | null | undefined; className?: string }) {
+  const displayValue = value || " - ";
+
+  return (
+    <span className={`inline-block truncate align-middle ${className}`} title={displayValue}>
+      {displayValue}
+    </span>
+  );
 }
 
 function getSortValue(order: Order, key: OrdersColumnKey): string | number {
@@ -360,9 +416,10 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
   const renderCell = (order: Order, column: OrdersColumnKey) => {
     switch (column) {
       case "product":
+        const fullProductName = describeProduct(order);
         return (
-          <div>
-            <div className="font-medium">{describeProduct(order)}</div>
+          <div title={fullProductName}>
+            <div className="font-medium tabular-nums">{abbreviateProduct(order.products)}</div>
             {order.deleted_at ? <div className="text-xs text-danger">削除済み</div> : null}
           </div>
         );
@@ -373,13 +430,17 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
       case "purchase_price":
         return formatCurrency(order.purchase_price);
       case "supplier":
-        return order.suppliers?.name ?? " - ";
+        return <TruncatedCell value={order.suppliers?.name} />;
       case "delivery_date":
         return formatDate(order.delivery_date);
       case "payment_account":
-        return order.payment_accounts?.name ?? " - ";
+        return <TruncatedCell value={order.payment_accounts?.name} className="max-w-[120px]" />;
       case "apple_account":
-        return order.apple_accounts?.email ?? " - ";
+        return (
+          <span className="inline-block max-w-[112px] truncate align-middle" title={order.apple_accounts?.email ?? " - "}>
+            {abbreviateEmail(order.apple_accounts?.email)}
+          </span>
+        );
       case "earned_points":
         return `${order.earned_points.toLocaleString("ja-JP")} pt`;
       case "profit":
@@ -391,7 +452,7 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
       case "order_number":
         return order.order_number ?? " - ";
       case "buyer":
-        return order.buyers?.name ?? " - ";
+        return <TruncatedCell value={order.buyers?.name} className="max-w-[120px]" />;
       case "sale_price":
         return formatCurrency(order.sale_price);
       case "transfer_date":
@@ -527,28 +588,28 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
           ) : (
             <>
               <DataTable>
-                <table className="min-w-max whitespace-nowrap text-sm">
+                <table className="min-w-max whitespace-nowrap text-xs">
                   <thead className="border-b border-border bg-bgTertiary/60 text-left text-textSecondary">
                     <tr>
                       {visibleColumns.map((column) => (
-                        <th key={column} className="px-4 py-3">
+                        <th key={column} className="px-3 py-2.5">
                           <button type="button" onClick={() => handleSort(column)}>
                             {columnLabels[column]}
                           </button>
                         </th>
                       ))}
-                      <th className="px-4 py-3">操作</th>
+                      <th className="px-3 py-2.5">操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedOrders.map((order) => (
                       <tr key={order.id} className="border-b border-border/70 hover:bg-bgTertiary">
                         {visibleColumns.map((column) => (
-                          <td key={column} className="px-4 py-3 align-middle">
+                          <td key={column} className="px-3 py-2.5 align-middle">
                             {renderCell(order, column)}
                           </td>
                         ))}
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2.5">
                           <div className="flex gap-2">
                             <button
                               type="button"
