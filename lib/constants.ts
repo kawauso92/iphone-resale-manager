@@ -18,6 +18,7 @@ export const DEFAULT_ORDER_COLUMNS: OrdersColumnKey[] = [
   "supplier",
   "delivery_date",
   "payment_account",
+  "apple_account",
   "buyer",
   "sale_price",
   "transfer_date",

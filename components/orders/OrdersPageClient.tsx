@@ -20,8 +20,13 @@ type OrdersPageClientProps = {
 
 type SortDirection = "asc" | "desc";
 
-const ORDER_COLUMNS_STORAGE_KEY = "orders.visibleColumns.v1";
-const ORDER_COLUMNS_COOKIE_KEY = "orders_visible_columns_v1";
+const ORDER_COLUMNS_STORAGE_KEY = "orders.visibleColumns.v2";
+const ORDER_COLUMNS_COOKIE_KEY = "orders_visible_columns_v2";
+const LEGACY_ORDER_COLUMNS_STORAGE_KEY = "orders.visibleColumns.v1";
+const LEGACY_ORDER_COLUMNS_COOKIE_KEY = "orders_visible_columns_v1";
+const ORDER_PAGE_SIZE_STORAGE_KEY = "orders.pageSize.v1";
+const ORDER_PAGE_SIZE_COOKIE_KEY = "orders_page_size_v1";
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 const ORDER_COLUMN_KEYS = [...DEFAULT_ORDER_COLUMNS, ...OPTIONAL_ORDER_COLUMNS] as OrdersColumnKey[];
 const DEFAULT_VISIBLE_COLUMNS = [
   ...DEFAULT_ORDER_COLUMNS,
@@ -36,6 +41,7 @@ const columnLabels: Record<OrdersColumnKey, string> = {
   supplier: "仕入れ先",
   delivery_date: "配送予定",
   payment_account: "使用口座",
+  apple_account: "Appleアカウント",
   earned_points: "獲得ポイント",
   profit: "利益",
   profit_with_points: "利益+ポイント",
@@ -66,21 +72,36 @@ function getCookieValue(name: string) {
     ?.slice(name.length + 1);
 }
 
-function getStoredVisibleColumns() {
+function getStoredVisibleColumns(): { value: string; shouldMigrate: boolean } | null {
   try {
     const stored = window.localStorage?.getItem(ORDER_COLUMNS_STORAGE_KEY);
-    if (stored) return stored;
+    if (stored) return { value: stored, shouldMigrate: false };
   } catch (error) {
     console.warn("[orders:visible-columns:local-storage]", error);
   }
 
   try {
     const stored = getCookieValue(ORDER_COLUMNS_COOKIE_KEY);
-    return stored ? decodeURIComponent(stored) : null;
+    if (stored) return { value: decodeURIComponent(stored), shouldMigrate: false };
   } catch (error) {
     console.warn("[orders:visible-columns:cookie]", error);
-    return null;
   }
+
+  try {
+    const stored = window.localStorage?.getItem(LEGACY_ORDER_COLUMNS_STORAGE_KEY);
+    if (stored) return { value: stored, shouldMigrate: true };
+  } catch (error) {
+    console.warn("[orders:visible-columns:legacy-local-storage]", error);
+  }
+
+  try {
+    const stored = getCookieValue(LEGACY_ORDER_COLUMNS_COOKIE_KEY);
+    if (stored) return { value: decodeURIComponent(stored), shouldMigrate: true };
+  } catch (error) {
+    console.warn("[orders:visible-columns:legacy-cookie]", error);
+  }
+
+  return null;
 }
 
 function storeVisibleColumns(columns: OrdersColumnKey[]) {
@@ -97,6 +118,53 @@ function storeVisibleColumns(columns: OrdersColumnKey[]) {
   } catch (error) {
     console.warn("[orders:visible-columns:cookie]", error);
   }
+}
+
+function getStoredPageSize() {
+  try {
+    const stored = window.localStorage?.getItem(ORDER_PAGE_SIZE_STORAGE_KEY);
+    if (stored) return stored;
+  } catch (error) {
+    console.warn("[orders:page-size:local-storage]", error);
+  }
+
+  try {
+    return getCookieValue(ORDER_PAGE_SIZE_COOKIE_KEY) ?? null;
+  } catch (error) {
+    console.warn("[orders:page-size:cookie]", error);
+    return null;
+  }
+}
+
+function storePageSize(pageSize: number) {
+  try {
+    window.localStorage?.setItem(ORDER_PAGE_SIZE_STORAGE_KEY, String(pageSize));
+  } catch (error) {
+    console.warn("[orders:page-size:local-storage]", error);
+  }
+
+  try {
+    document.cookie = `${ORDER_PAGE_SIZE_COOKIE_KEY}=${pageSize}; path=/; max-age=31536000; SameSite=Lax`;
+  } catch (error) {
+    console.warn("[orders:page-size:cookie]", error);
+  }
+}
+
+function isPageSizeOption(value: number): value is (typeof PAGE_SIZE_OPTIONS)[number] {
+  return PAGE_SIZE_OPTIONS.includes(value as (typeof PAGE_SIZE_OPTIONS)[number]);
+}
+
+function addAppleAccountColumn(columns: OrdersColumnKey[]) {
+  if (columns.includes("apple_account")) return columns;
+
+  const paymentAccountIndex = columns.indexOf("payment_account");
+  const insertIndex = paymentAccountIndex >= 0 ? paymentAccountIndex + 1 : columns.length;
+
+  return [
+    ...columns.slice(0, insertIndex),
+    "apple_account" as const,
+    ...columns.slice(insertIndex),
+  ];
 }
 
 function describeProduct(order: Order) {
@@ -122,6 +190,8 @@ function getSortValue(order: Order, key: OrdersColumnKey): string | number {
       return order.delivery_date ?? "";
     case "payment_account":
       return order.payment_accounts?.name ?? "";
+    case "apple_account":
+      return order.apple_accounts?.email ?? "";
     case "earned_points":
       return order.earned_points;
     case "profit":
@@ -166,6 +236,7 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [visibleColumns, setVisibleColumns] = useState<OrdersColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [hasLoadedVisibleColumns, setHasLoadedVisibleColumns] = useState(false);
+  const [hasLoadedPageSize, setHasLoadedPageSize] = useState(false);
 
   const filteredOrders = useMemo(() => {
     return orders
@@ -198,7 +269,7 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
   useEffect(() => {
     try {
       const stored = getStoredVisibleColumns();
-      const parsed = stored ? JSON.parse(stored) : null;
+      const parsed = stored ? JSON.parse(stored.value) : null;
 
       if (Array.isArray(parsed)) {
         const restored = parsed.filter(
@@ -207,7 +278,7 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
         );
 
         if (restored.length > 0) {
-          setVisibleColumns(restored);
+          setVisibleColumns(stored?.shouldMigrate ? addAppleAccountColumn(restored) : restored);
         }
       }
     } catch (error) {
@@ -221,6 +292,22 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
     if (!hasLoadedVisibleColumns) return;
     storeVisibleColumns(visibleColumns);
   }, [hasLoadedVisibleColumns, visibleColumns]);
+
+  useEffect(() => {
+    const stored = getStoredPageSize();
+    const parsed = stored ? Number(stored) : NaN;
+
+    if (isPageSizeOption(parsed)) {
+      setPageSize(parsed);
+    }
+
+    setHasLoadedPageSize(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedPageSize) return;
+    storePageSize(pageSize);
+  }, [hasLoadedPageSize, pageSize]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -291,6 +378,8 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
         return formatDate(order.delivery_date);
       case "payment_account":
         return order.payment_accounts?.name ?? " - ";
+      case "apple_account":
+        return order.apple_accounts?.email ?? " - ";
       case "earned_points":
         return `${order.earned_points.toLocaleString("ja-JP")} pt`;
       case "profit":
@@ -419,7 +508,7 @@ export function OrdersPageClient({ orders, products }: OrdersPageClientProps) {
                 value={pageSize}
                 onChange={(event) => setPageSize(Number(event.target.value))}
               >
-                {[10, 25, 50].map((size) => (
+                {PAGE_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>
                     {size}件
                   </option>

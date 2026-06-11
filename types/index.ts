@@ -176,6 +176,7 @@ export type OrdersColumnKey =
   | "supplier"
   | "delivery_date"
   | "payment_account"
+  | "apple_account"
   | "earned_points"
   | "profit"
   | "profit_with_points"
